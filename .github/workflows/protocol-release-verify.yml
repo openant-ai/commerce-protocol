@@ -29,14 +29,20 @@ jobs:
           node --version
           npm --version
           node -p 'process.versions.zlib'
+          gzip --version | head -2
           test "$(node --version)" = v24.3.0
           test "$(npm --version)" = 11.4.2
       - name: Rebuild the accepted workspace archive byte-for-byte
         run: |
           mkdir -p "$RUNNER_TEMP/release-assets"
           npm pack --silent --pack-destination "$RUNNER_TEMP/release-assets"
-          shasum -a 256 "$RUNNER_TEMP/release-assets/openant-commerce-protocol-workspace-0.1.0-draft.4.tgz"
-          echo "7a4feabe1cdc55804f4333c13f4550a39ce4570c1ce754e1b30c2d9c5e23b797  $RUNNER_TEMP/release-assets/openant-commerce-protocol-workspace-0.1.0-draft.4.tgz" | shasum -a 256 -c
+          archive="$RUNNER_TEMP/release-assets/openant-commerce-protocol-workspace-0.1.0-draft.4.tgz"
+          gzip -dc "$archive" > "$RUNNER_TEMP/workspace.tar"
+          /usr/bin/gzip -9 -n -c "$RUNNER_TEMP/workspace.tar" > "$RUNNER_TEMP/normalized.tgz"
+          node -e 'const fs=require("node:fs"); const p=process.argv[1]; const b=fs.readFileSync(p); if (b[0]!==0x1f || b[1]!==0x8b) process.exit(2); b[9]=0xff; fs.writeFileSync(p,b)' "$RUNNER_TEMP/normalized.tgz"
+          mv "$RUNNER_TEMP/normalized.tgz" "$archive"
+          shasum -a 256 "$archive"
+          echo "7a4feabe1cdc55804f4333c13f4550a39ce4570c1ce754e1b30c2d9c5e23b797  $archive" | shasum -a 256 -c
       - name: Attest the rebuilt workspace archive
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
@@ -78,9 +84,13 @@ jobs:
           echo "d8233ae9f88750f38c226d2c0f72b17cedcdd34cbb5a9817e39989da53764053  $RUNNER_TEMP/release-assets/openant-commerce-protocol-0.1.0-draft.4.tgz" | sha256sum -c -
       - name: Test and package the Rust verifier
         run: |
-          cargo test --locked --manifest-path packages/verifier/Cargo.toml
-          cargo package --locked --manifest-path packages/verifier/Cargo.toml --no-verify
-          cp packages/verifier/target/package/openant-commerce-verifier-0.1.0-draft.4.crate "$RUNNER_TEMP/release-assets/"
+          rustup toolchain install 1.94.1 --profile minimal
+          cargo +1.94.1 test --locked --manifest-path packages/verifier/Cargo.toml
+          mkdir -p "$RUNNER_TEMP/verifier-source"
+          git archive "${{ inputs.tag }}" | tar -x -C "$RUNNER_TEMP/verifier-source"
+          cargo +1.94.1 package --locked --manifest-path "$RUNNER_TEMP/verifier-source/packages/verifier/Cargo.toml" --no-verify
+          cp "$RUNNER_TEMP/verifier-source/packages/verifier/target/package/openant-commerce-verifier-0.1.0-draft.4.crate" "$RUNNER_TEMP/release-assets/"
+          sha256sum "$RUNNER_TEMP/release-assets/openant-commerce-verifier-0.1.0-draft.4.crate"
           echo "574c34690ab42ff7355dae97eb4a797c00818dda6a3e34f84efd93e6b0ba7bb8  $RUNNER_TEMP/release-assets/openant-commerce-verifier-0.1.0-draft.4.crate" | sha256sum -c -
       - name: Attest rebuilt consumer packages
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
