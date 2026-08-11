@@ -7,11 +7,12 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "npm run test:schema && npm run test:protocol && npm run test:reference && npm run test:codegen",
+    "test": "npm run test:schema && npm run test:protocol && npm run test:reference && npm run test:codegen && npm run test:release",
     "test:schema": "node --test schemas/tests/*.test.cjs",
     "test:protocol": "npm --prefix packages/protocol test",
     "test:reference": "node --test reference/*.test.mjs vectors/*.test.mjs tools/conformance/*.test.mjs",
     "test:codegen": "npm --prefix codegen test",
+    "test:release": "node --test tools/release/*.test.mjs",
     "build:protocol": "npm --prefix packages/protocol run build"
   },
   "devDependencies": {

@@ -1,0 +1,63 @@
+name: Protocol release reproducibility
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Immutable protocol tag to rebuild
+        required: true
+        default: v0.1.0-draft.4
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            codegen/package-lock.json
+            packages/protocol/package-lock.json
+      - name: Install pinned JavaScript dependencies
+        run: |
+          npm ci
+          npm --prefix codegen ci
+          npm --prefix packages/protocol ci
+      - name: Test the immutable protocol source
+        run: npm test
+      - name: Rebuild the accepted workspace archive
+        run: |
+          mkdir -p "$RUNNER_TEMP/release-assets"
+          npm pack --silent --pack-destination "$RUNNER_TEMP/release-assets"
+          echo "7a4feabe1cdc55804f4333c13f4550a39ce4570c1ce754e1b30c2d9c5e23b797  $RUNNER_TEMP/release-assets/openant-commerce-protocol-workspace-0.1.0-draft.4.tgz" | sha256sum -c -
+      - name: Rebuild the consumer npm package
+        run: |
+          npm --prefix packages/protocol run build
+          npm --prefix packages/protocol pack --silent --pack-destination "$RUNNER_TEMP/release-assets"
+          echo "d8233ae9f88750f38c226d2c0f72b17cedcdd34cbb5a9817e39989da53764053  $RUNNER_TEMP/release-assets/openant-commerce-protocol-0.1.0-draft.4.tgz" | sha256sum -c -
+      - name: Test and package the Rust verifier
+        run: |
+          cargo test --locked --manifest-path packages/verifier/Cargo.toml
+          cargo package --locked --manifest-path packages/verifier/Cargo.toml --no-verify
+          cp packages/verifier/target/package/openant-commerce-verifier-0.1.0-draft.4.crate "$RUNNER_TEMP/release-assets/"
+          echo "574c34690ab42ff7355dae97eb4a797c00818dda6a3e34f84efd93e6b0ba7bb8  $RUNNER_TEMP/release-assets/openant-commerce-verifier-0.1.0-draft.4.crate" | sha256sum -c -
+      - name: Attest rebuilt release packages
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: ${{ runner.temp }}/release-assets/*
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: commerce-protocol-${{ inputs.tag }}-reproducible-packages
+          if-no-files-found: error
+          path: ${{ runner.temp }}/release-assets/*

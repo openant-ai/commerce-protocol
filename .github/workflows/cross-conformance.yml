@@ -1,0 +1,63 @@
+name: Published cross-conformance
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published immutable release tag
+        required: true
+        default: v0.1.0-draft.4
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  cross-conformance:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag }}
+      RUNTIME_IMAGE: node:20-bookworm-slim@sha256:10fc5f5f33cba34a4befa58fcf95f724e67707fab7c32fb8cd3fcf90ebcc20df
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Download the immutable release inputs
+        run: |
+          mkdir release-assets
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir release-assets
+      - name: Verify the release manifest and every asset
+        run: node tools/release/verify-release-assets.mjs "$GITHUB_WORKSPACE/release-assets"
+      - name: Run the production cross CLI twice
+        run: |
+          chmod 0555 release-assets/commerce-conformance-adapter-linux-arm64
+          for run in 1 2; do
+            docker run --rm --platform linux/arm64 \
+              --network none \
+              --mount type=bind,src="$GITHUB_WORKSPACE",dst=/workspace,readonly \
+              --workdir /workspace \
+              "$RUNTIME_IMAGE" \
+              node tools/conformance/cross-cli.mjs \
+                --protocol-archive /workspace/release-assets/openant-commerce-protocol-workspace-0.1.0-draft.4.tgz \
+                --money-projection-baseline /workspace/release-assets/ox002-reference-report.ndjson \
+                --crypto-proof-report /workspace/release-assets/ox003-conformance-report.jsonl \
+                --adapter-source-bundle /workspace/release-assets/0xkey-commerce-conformance-adapter-source.tar \
+                --adapter /workspace/release-assets/commerce-conformance-adapter-linux-arm64 \
+                --timeout-ms 5000 > "cross-run-$run.ndjson"
+          done
+          cmp cross-run-1.ndjson cross-run-2.ndjson
+          test "$(wc -l < cross-run-1.ndjson | tr -d ' ')" = 17
+          expected=$(node -e 'const m=require("./release-assets/release-manifest.json"); process.stdout.write(m.crossReportDigest.slice(7))')
+          echo "$expected  cross-run-1.ndjson" | sha256sum -c -
+      - name: Attest the public acceptance report
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: cross-run-1.ndjson
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: cross-conformance-${{ env.RELEASE_TAG }}
+          if-no-files-found: error
+          path: cross-run-1.ndjson
