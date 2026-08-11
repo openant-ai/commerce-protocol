@@ -1,0 +1,1819 @@
+{
+  "protocol": {
+    "id": "openant-commerce",
+    "version": "0.1.0-draft.4",
+    "wireVersion": "0.1",
+    "status": "draft",
+    "scope": "OpenAnt OnChain A2MCP and the shared A2A envelope",
+    "schema": "../schemas/commerce-0.1.schema.json"
+  },
+  "objects": {
+    "CommerceOperation": "#/$defs/commerceOperation",
+    "ServiceDefinitionVersion": "#/$defs/serviceDefinitionVersion",
+    "OfferVersion": "#/$defs/offerVersion",
+    "EndpointDescriptorVersion": "#/$defs/endpointDescriptorVersion",
+    "ServiceSKUVersion": "#/$defs/serviceSkuVersion",
+    "TaskAgreementVersion": "#/$defs/taskAgreementVersion",
+    "RuntimeCapability": "#/$defs/runtimeCapability",
+    "ListingMandate": "#/$defs/listingMandate",
+    "SellerIdentityCredential": "#/$defs/sellerIdentityCredential",
+    "Invocation": "#/$defs/invocation",
+    "PaymentIntent": "#/$defs/paymentIntent",
+    "PaymentRequiredOutcome": "#/$defs/paymentRequiredOutcome",
+    "OpenAntX402Extension": "#/$defs/openAntX402Extension",
+    "ArtifactManifest": "#/$defs/artifactManifest",
+    "ReceiptEnvelope": "#/$defs/receiptEnvelope",
+    "DeliveryAcknowledgement": "#/$defs/deliveryAcknowledgement",
+    "ProofBundle": "#/$defs/proofBundle",
+    "ProtocolError": "#/$defs/protocolError"
+  },
+  "operationKindApplicability": {
+    "INVOCATION": {
+      "adapterProfile": "PHASE0_A2MCP",
+      "envelopeRequiredFields": [
+        "objectType",
+        "protocolVersion",
+        "operationId",
+        "kind",
+        "serviceSkuVersionDigest",
+        "invocationId"
+      ],
+      "resolvedObjectTypes": [
+        "ServiceSKUVersion",
+        "ServiceDefinitionVersion",
+        "OfferVersion",
+        "EndpointDescriptorVersion",
+        "ListingMandate",
+        "Invocation"
+      ],
+      "permissionEvidence": [
+        "ListingMandate"
+      ],
+      "conditionalEvidence": [
+        {
+          "when": "requestedAssurance",
+          "registryRef": "assuranceRequirements"
+        },
+        {
+          "when": "requestedAssurance.authorization=MANDATE_PROTECTED",
+          "objectTypes": [
+            "RuntimeCapability"
+          ]
+        }
+      ],
+      "stateMachines": [
+        {
+          "name": "invocation",
+          "authority": "OpenAnt commercial ledger"
+        },
+        {
+          "name": "paymentIntent",
+          "authority": "0xkey funding ledger",
+          "profileSelector": "requestedAssurance.authorization"
+        }
+      ],
+      "chargeableSuccess": {
+        "applicable": true,
+        "sourceObject": "ServiceDefinitionVersion",
+        "sourceField": "chargeableSuccess"
+      },
+      "pricing": {
+        "applicable": true,
+        "sourceObject": "OfferVersion",
+        "sourceField": "pricingModel",
+        "requiredValue": "FIXED_PER_SUCCESSFUL_UNARY_CALL"
+      },
+      "errorCodes": [
+        "SCHEMA_INVALID",
+        "UNSUPPORTED_PROTOCOL_VERSION",
+        "CHALLENGE_INVALID",
+        "CHALLENGE_EXPIRED",
+        "LISTING_REVOKED",
+        "MANDATE_NOT_FOUND",
+        "MANDATE_SCOPE_DENIED",
+        "APPROVAL_REQUIRED",
+        "BUDGET_EXCEEDED",
+        "RESERVATION_CONFLICT",
+        "IDEMPOTENCY_FINGERPRINT_CONFLICT",
+        "AUTHORIZATION_FAILED",
+        "AUTHORIZATION_UNKNOWN",
+        "PAYMENT_PATH_UNAVAILABLE",
+        "SETTLEMENT_UNKNOWN",
+        "SETTLEMENT_REJECTED",
+        "OUTPUT_NOT_CHARGEABLE",
+        "OUTPUT_NOT_STAGED",
+        "PROOF_INCOMPLETE",
+        "PROOF_BINDING_MISMATCH",
+        "TENANT_CONTEXT_MISMATCH",
+        "ILLEGAL_STATE_TRANSITION"
+      ],
+      "limitKeys": [
+        "requestBytes",
+        "responseBytes",
+        "artifactBytes",
+        "sellerExecutionSeconds",
+        "invocationSeconds",
+        "paymentIntentSeconds",
+        "unacknowledgedRecoverySeconds",
+        "acknowledgedDeletionGraceSeconds"
+      ],
+      "settlementPath": "A2MCP_X402_BUYER_TO_SELLER",
+      "standardX402WithoutSignedOpenAntExtension": "OUTSIDE_OPENANT_COMMERCE_OPERATION_CATALOG"
+    },
+    "TASK": {
+      "adapterProfile": "A2A_ADAPTER_REQUIRED",
+      "envelopeRequiredFields": [
+        "objectType",
+        "protocolVersion",
+        "operationId",
+        "kind",
+        "taskAgreementVersionDigest",
+        "escrowRef"
+      ],
+      "resolvedObjectTypes": [
+        "TaskAgreementVersion",
+        "ServiceSKUVersion",
+        "ServiceDefinitionVersion",
+        "OfferVersion",
+        "EndpointDescriptorVersion"
+      ],
+      "permissionEvidence": [
+        "TaskAgreementVersion"
+      ],
+      "conditionalEvidence": [
+        {
+          "when": "external A2A adapter profile",
+          "registryRef": "A2A_ADAPTER_REQUIRED"
+        }
+      ],
+      "stateMachines": [],
+      "externalStateMachineRef": "EXTERNAL_A2A_ESCROW_ADAPTER",
+      "chargeableSuccess": {
+        "applicable": false,
+        "sourceObject": null,
+        "sourceField": null
+      },
+      "pricing": {
+        "applicable": false,
+        "sourceObject": null,
+        "sourceField": null,
+        "requiredValue": null
+      },
+      "a2mcpPricing": "NOT_APPLICABLE",
+      "commercialTermsSource": "TaskAgreementVersion.agreementTerms",
+      "fundingModel": "EXTERNAL_ESCROW_REF",
+      "errorCodes": [
+        "SCHEMA_INVALID",
+        "UNSUPPORTED_PROTOCOL_VERSION",
+        "PROOF_INCOMPLETE",
+        "PROOF_BINDING_MISMATCH"
+      ],
+      "externalErrorRegistryRef": "EXTERNAL_A2A_ESCROW_ADAPTER",
+      "limitKeys": [],
+      "externalLimitsSource": "TaskAgreementVersion.agreementTerms",
+      "settlementPath": "A2A_ESCROW_CONTRACT_ONLY"
+    }
+  },
+  "invariants": [
+    {
+      "id": "INV-NO-CUSTOMER-POOL",
+      "statement": "A2MCP transfers buyer to seller and A2A transfers only to its escrow contract; neither OpenAnt nor 0xkey is a customer funds pool."
+    },
+    {
+      "id": "INV-LEDGER-OWNERSHIP",
+      "statement": "OpenAnt owns commercial state and 0xkey owns funding authorization and settlement state; either side stores only signed references to the other side's facts."
+    },
+    {
+      "id": "INV-SELLER-AUTHORITY",
+      "statement": "A service definition, price, payout, endpoint, key, or rule change creates a new component version, SKU root, and seller-signed ListingMandate."
+    },
+    {
+      "id": "INV-FAIL-CLOSED",
+      "statement": "Unknown signature, policy, budget, facilitator, or proof state creates no new risk exposure and is never treated as success."
+    },
+    {
+      "id": "INV-SETTLEMENT-FINAL",
+      "statement": "A final settlement is never rolled back; a commercial refund is a new seller-authorized transaction."
+    },
+    {
+      "id": "INV-METADATA-ONLY",
+      "statement": "PaymentIntent, funding proofs, events, logs, and traces contain identifiers, hashes, amounts, issuer data, and state only; raw request, response, prompt, arguments, and artifact bytes are forbidden."
+    },
+    {
+      "id": "INV-OUTPUT-BEFORE-SETTLE",
+      "statement": "Hosted settlement is allowed only after complete output bytes have passed schema, media type, size, and hash checks and are durably staged in encrypted content escrow."
+    },
+    {
+      "id": "INV-PROOF-COMPOSITION",
+      "statement": "No single issuer claims end-to-end success; payment proves payment, while hosted delivery proof or direct buyer acceptance proves technical fulfillment."
+    }
+  ],
+  "limits": {
+    "requestBytes": {
+      "default": 65536,
+      "maximum": 262144
+    },
+    "responseBytes": {
+      "default": 1048576,
+      "maximum": 10485760
+    },
+    "artifactBytes": {
+      "maximum": 104857600
+    },
+    "sellerExecutionSeconds": {
+      "default": 30,
+      "maximum": 60
+    },
+    "invocationSeconds": {
+      "maximum": 90
+    },
+    "paymentIntentSeconds": {
+      "default": 300,
+      "maximum": 300
+    },
+    "unacknowledgedRecoverySeconds": {
+      "default": 86400,
+      "maximum": 259200
+    },
+    "acknowledgedDeletionGraceSeconds": {
+      "default": 900,
+      "maximum": 900
+    }
+  },
+  "idempotency": {
+    "paymentIntentFingerprintCommonFields": [
+      "fundingLedgerNamespace",
+      "fundingAuthority.issuer",
+      "fundingAuthority.keyId",
+      "settlementAuthority.issuer",
+      "settlementAuthority.keyId",
+      "observationAuthority.issuer",
+      "observationAuthority.keyId",
+      "buyerActorRef",
+      "invocationId",
+      "challengeDigest",
+      "skuVersionDigest",
+      "sellerIdentityRef",
+      "payerAddress",
+      "payoutAddress",
+      "asset.network",
+      "asset.namespace",
+      "asset.reference",
+      "amountAtomic",
+      "mode",
+      "requestedAssurance.authorization",
+      "requestedAssurance.settlement",
+      "requestedAssurance.delivery",
+      "requestedAssurance.contentCustody",
+      "requestedAssurance.identity",
+      "facilitatorId",
+      "expiresAt"
+    ],
+    "paymentIntentFingerprintConditionalFields": {
+      "MANDATE_PROTECTED": [
+        "tenantId",
+        "memberSuborgId",
+        "treasuryProfile",
+        "treasuryRef",
+        "agentId",
+        "runtimeId",
+        "runtimeCapabilityDigest",
+        "mandateId",
+        "mandateVersion"
+      ],
+      "WALLET_SIGNED": []
+    },
+    "conflictCode": "IDEMPOTENCY_FINGERPRINT_CONFLICT"
+  },
+  "assuranceRequirements": {
+    "authorization": {
+      "NONE": [],
+      "WALLET_SIGNED": ["WalletAuthorizationProof"],
+      "MANDATE_PROTECTED": ["MandateAuthorizationProof"]
+    },
+    "settlement": {
+      "NONE": [],
+      "SUBMITTED_ONLY": [],
+      "FINALITY_VERIFIED": ["SettlementReceipt"]
+    },
+    "delivery": {
+      "NONE": [],
+      "SELLER_ASSERTED": ["ExecutionReceipt"],
+      "DIRECT_BUYER_ACCEPTED": ["ExecutionReceipt", "AcceptanceReceipt"],
+      "HOSTED_RECOVERABLE": ["OutputStagingReceipt", "DeliveryReceipt"]
+    },
+    "contentCustody": {
+      "DIRECT": [],
+      "HOSTED_EPHEMERAL": ["DeliveryReceipt"],
+      "HOSTED_ENCRYPTED_BUFFER": ["OutputStagingReceipt"]
+    },
+    "identity": {
+      "ANONYMOUS_WALLET": [],
+      "PLATFORM_BOUND": ["ListingMandate"],
+      "VERIFIED_SELLER": ["ListingMandate", "SellerIdentityCredential"]
+    }
+  },
+  "modeAssuranceCompatibility": {
+    "DIRECT": {
+      "delivery": ["DIRECT_BUYER_ACCEPTED"],
+      "contentCustody": ["DIRECT"]
+    },
+    "HOSTED": {
+      "delivery": ["HOSTED_RECOVERABLE"],
+      "contentCustody": ["HOSTED_EPHEMERAL", "HOSTED_ENCRYPTED_BUFFER"]
+    }
+  },
+  "privacy": {
+    "forbiddenFundingAndTelemetryProperties": [
+      "prompt",
+      "toolArguments",
+      "requestBody",
+      "responseBody",
+      "artifactBytes",
+      "token",
+      "cookie",
+      "credential",
+      "privateKey"
+    ]
+  },
+  "formats": {
+    "uint256-decimal": "ASCII 0 or a non-zero digit followed by ASCII digits, no leading zero, numeric value at most 2^256-1",
+    "rfc3339-utc-whole-seconds": "exact YYYY-MM-DDTHH:MM:SSZ that round-trips to the same proleptic Gregorian UTC instant; impossible calendar dates and leap seconds are invalid"
+  },
+  "crossObjectBindings": [
+    {
+      "id": "BIND-SKU-DEFINITION-RESOLUTION",
+      "left": "ServiceSKUVersion.serviceDefinitionVersionDigest",
+      "operator": "byte_equal",
+      "right": "digest(SERVICE_DEFINITION_VERSION, ResolvedServiceDefinitionVersion)",
+      "resolve": "ResolvedServiceDefinitionVersion is fetched by ServiceSKUVersion.serviceDefinitionVersionDigest and its canonical digest MUST be recomputed",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-SKU-OFFER-RESOLUTION",
+      "left": "ServiceSKUVersion.offerVersionDigest",
+      "operator": "byte_equal",
+      "right": "digest(OFFER_VERSION, ResolvedOfferVersion)",
+      "resolve": "ResolvedOfferVersion is fetched by ServiceSKUVersion.offerVersionDigest and its canonical digest MUST be recomputed",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-SKU-ENDPOINT-RESOLUTION",
+      "left": "ServiceSKUVersion.endpointDescriptorVersionDigest",
+      "operator": "byte_equal",
+      "right": "digest(ENDPOINT_DESCRIPTOR_VERSION, ResolvedEndpointDescriptorVersion)",
+      "resolve": "ResolvedEndpointDescriptorVersion is fetched by ServiceSKUVersion.endpointDescriptorVersionDigest and its canonical digest MUST be recomputed",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-LISTING-SKU-ROOT",
+      "left": "pair(ListingMandate.serviceSkuId, ListingMandate.skuVersionDigest)",
+      "operator": "pair_equal",
+      "right": "pair(ResolvedServiceSKUVersion.serviceSkuId, digest(SERVICE_SKU_VERSION, ResolvedServiceSKUVersion))",
+      "resolve": "ResolvedServiceSKUVersion is selected by ListingMandate.skuVersionDigest; its canonical root digest MUST be recomputed before child resolution",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-LISTING-SKU-SELLER",
+      "left": "ListingMandate.sellerIdentityRef",
+      "operator": "byte_equal",
+      "right": "ResolvedServiceSKUVersion.sellerIdentityRef",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-SKU-DEFINITION-OPERATION",
+      "left": "ServiceSKUVersion.operationId",
+      "operator": "byte_equal",
+      "right": "ResolvedServiceDefinitionVersion.operationId",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-SKU-MODE-ASSURANCE",
+      "left": "tuple(ResolvedEndpointDescriptorVersion.mode, ResolvedOfferVersion.minimumAssurance.delivery, ResolvedOfferVersion.minimumAssurance.contentCustody)",
+      "operator": "member_of_mode_assurance_matrix",
+      "right": "modeAssuranceCompatibility",
+      "resolve": "ServiceSKUVersion resolves the canonically recomputed EndpointDescriptorVersion and OfferVersion child digests before any challenge is issued",
+      "rule": "Phase 0 DIRECT requires DIRECT_BUYER_ACCEPTED plus DIRECT custody; HOSTED requires HOSTED_RECOVERABLE plus a Hosted custody class. NONE and SELLER_ASSERTED remain vocabulary values but are not realizable SKU minimums in Phase 0",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-LISTING-SELLER-SIGNATURE",
+      "left": "ListingMandate.sellerIdentityRef",
+      "operator": "byte_equal",
+      "right": "ListingMandate.signature.issuer",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-LISTING-VALID-TIME",
+      "left": "ListingMandate.validFrom",
+      "operator": "instant_lte_inclusive",
+      "right": "ListingMandate.validUntil",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-X402-VALID-TIME",
+      "left": "OpenAntX402Extension.issuedAt",
+      "operator": "instant_lte_inclusive",
+      "right": "OpenAntX402Extension.expiresAt",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-PAYMENT-INTENT-VALID-TIME",
+      "left": "PaymentIntent.createdAt",
+      "operator": "instant_lte_inclusive",
+      "right": "PaymentIntent.expiresAt",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-PAYMENT-INTENT-CHALLENGE-TIME",
+      "left": "PaymentIntent.createdAt",
+      "operator": "instant_in_closed_interval",
+      "right": "[ResolvedOpenAntX402Extension.issuedAt, ResolvedOpenAntX402Extension.expiresAt]",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-WALLET-PROOF-VALID-TIME",
+      "left": "WalletAuthorizationProof.issuedAt",
+      "operator": "instant_lt_exclusive",
+      "right": "WalletAuthorizationProof.expiresAt",
+      "rule": "A WalletAuthorizationProof represents an EIP-3009 authorization whose validBefore boundary is exclusive",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-MANDATE-PROOF-INTENT-TIME",
+      "left": "MandateAuthorizationProof.issuedAt",
+      "operator": "instant_in_closed_interval",
+      "right": "[ResolvedPaymentIntent.createdAt, ResolvedPaymentIntent.expiresAt]",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-WALLET-PROOF-INTENT-TIME",
+      "left": "WalletAuthorizationProof.issuedAt",
+      "operator": "instant_in_half_open_interval",
+      "right": "[ResolvedPaymentIntent.createdAt, ResolvedPaymentIntent.expiresAt)",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-WALLET-PROOF-LIVE-TIME",
+      "left": "VerifierOwnedLiveObservation",
+      "operator": "instant_in_half_open_interval",
+      "right": "[WalletAuthorizationProof.issuedAt, WalletAuthorizationProof.expiresAt)",
+      "rule": "The observation instant is read internally from the live verifier clock and cannot be supplied or backdated by the caller; historical verification remains unsupported until a verifiable TSA or transparency-log profile is registered",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-TASK-AGREEMENT-VALID-TIME",
+      "left": "TaskAgreementVersion.validFrom",
+      "operator": "instant_lte_inclusive",
+      "right": "TaskAgreementVersion.validUntil",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-STAGING-VALID-TIME",
+      "left": "OutputStagingReceipt.issuedAt",
+      "operator": "instant_lte_inclusive",
+      "right": "OutputStagingReceipt.availableUntil",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-DELIVERY-VALID-TIME",
+      "left": "DeliveryReceipt.issuedAt",
+      "operator": "instant_lte_inclusive",
+      "right": "DeliveryReceipt.availableUntil",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-ACK-DELIVERY-TIME",
+      "left": "DeliveryAcknowledgement.receivedAt",
+      "operator": "instant_in_closed_interval",
+      "right": "[ResolvedDeliveryReceipt.issuedAt, ResolvedDeliveryReceipt.availableUntil]",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-HOSTED-RECOVERY-WINDOW",
+      "leftObject": "OutputStagingReceipt",
+      "operator": "derived_recovery_window",
+      "rightObject": "ResolvedOfferVersion",
+      "rules": [
+        "OutputStagingReceipt.availableUntil == add_seconds(OutputStagingReceipt.issuedAt, ResolvedOfferVersion.deliveryTerms.unacknowledgedRecoverySeconds)",
+        "ResolvedDeliveryReceipt.availableUntil == OutputStagingReceipt.availableUntil",
+        "ResolvedInvocation.createdAt <= OutputStagingReceipt.issuedAt",
+        "ResolvedDeliveryReceipt.issuedAt <= ProofBundle.createdAt <= ResolvedDeliveryReceipt.availableUntil"
+      ],
+      "rule": "All comparisons are inclusive and all objects are correlated by the same Invocation and SKU root",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-EVIDENCE-CHRONOLOGY",
+      "operator": "mode_dependent_instant_order_lte_inclusive",
+      "rules": [
+        "HOSTED: ResolvedAuthorizationProof.issuedAt <= ResolvedOutputStagingReceipt.issuedAt <= ResolvedSettlementReceipt.issuedAt <= ResolvedDeliveryReceipt.issuedAt <= ResolvedDeliveryAcknowledgement.receivedAt",
+        "DIRECT: ResolvedAuthorizationProof.issuedAt <= ResolvedExecutionReceipt.issuedAt <= ResolvedSettlementReceipt.issuedAt <= ResolvedAcceptanceReceipt.issuedAt"
+      ],
+      "resolve": "Every evidence object MUST first pass concrete type, digest, Invocation, SKU, PaymentIntent, signer-role, and content-lineage bindings; mode comes from the resolved EndpointDescriptorVersion",
+      "rule": "Settlement evidence timestamped before the applicable complete-output evidence is invalid under INV-OUTPUT-BEFORE-SETTLE",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-INVOCATION-DELIVERY-STATE",
+      "condition": "Invocation.mode == HOSTED and (Invocation.state in [DELIVERED, ACKED] or (Invocation.state == RECOVERY_WINDOW_EXPIRED and Invocation.deliveryReceiptDigest is present))",
+      "left": "ResolvedDeliveryReceipt.deliveryState",
+      "operator": "byte_equal",
+      "right": "DELIVERED",
+      "resolve": "ResolvedDeliveryReceipt is selected by Invocation.deliveryReceiptDigest and MUST already match claims digest, Invocation, and SKU",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-RECEIPT-ISSUER-SIGNATURE",
+      "left": "ReceiptEnvelope.issuer.issuer",
+      "operator": "byte_equal",
+      "right": "ReceiptEnvelope.signature.issuer",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-RECEIPT-KEY-SIGNATURE",
+      "left": "ReceiptEnvelope.issuer.keyId",
+      "operator": "byte_equal",
+      "right": "ReceiptEnvelope.signature.keyId",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-JWS-RECEIPT-CLAIMS-SIGNATURE",
+      "condition": "ReceiptEnvelope.objectType != WalletAuthorizationProof",
+      "left": "ReceiptEnvelope.claimsDigest",
+      "operator": "byte_equal",
+      "right": "ReceiptEnvelope.signature.signedObjectDigest",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-WALLET-PROOF-AUTHORIZATION-SIGNATURE",
+      "condition": "WalletAuthorizationProof.signature.scheme == EIP712",
+      "left": "WalletAuthorizationProof.paymentAuthorizationDigest",
+      "operator": "all_equal",
+      "right": "pair(WalletAuthorizationProof.signature.signedObjectDigest, digest(PAYMENT_AUTHORIZATION, ResolvedTransferWithAuthorizationTypedData))",
+      "resolve": "ResolvedTransferWithAuthorizationTypedData is the exact Phase 0 Base USDC EIP-3009 object derived from the WalletAuthorizationProof and resolved PaymentIntent; no caller-supplied digest or TypedData field is authoritative",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-WALLET-PROOF-CLAIMS-DIGEST",
+      "left": "WalletAuthorizationProof.claimsDigest",
+      "operator": "byte_equal",
+      "right": "digest(RECEIPT_CLAIMS, WalletAuthorizationProof excluding claimsDigest and signature)",
+      "rule": "The EIP-3009 signature does not directly sign receipt claims; claimsDigest is independently recomputed from the complete receipt claims, including paymentAuthorizationDigest",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-ACK-BUYER-SIGNATURE",
+      "left": "DeliveryAcknowledgement.buyerActorRef",
+      "operator": "byte_equal",
+      "right": "DeliveryAcknowledgement.attestation.issuer",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-ACK-INVOCATION-BUYER",
+      "left": "DeliveryAcknowledgement.buyerActorRef",
+      "operator": "byte_equal",
+      "right": "ResolvedInvocation.buyerActorRef",
+      "resolve": "ResolvedInvocation is selected by DeliveryAcknowledgement.invocationId",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-ACK-DELIVERY-RECEIPT",
+      "left": "DeliveryAcknowledgement.deliveryReceiptDigest",
+      "operator": "byte_equal",
+      "right": "digest(RECEIPT_CLAIMS, ResolvedDeliveryReceipt)",
+      "resolve": "ResolvedDeliveryReceipt is required and selected by DeliveryAcknowledgement.deliveryReceiptDigest",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-ACK-INVOCATION",
+      "left": "DeliveryAcknowledgement.invocationId",
+      "operator": "byte_equal",
+      "right": "ResolvedDeliveryReceipt.invocationId",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-ACK-RESPONSE-CONTENT",
+      "condition": "DeliveryAcknowledgement.contentKind == RESPONSE",
+      "left": "DeliveryAcknowledgement.receivedContentDigest",
+      "operator": "byte_equal",
+      "right": "ResolvedDeliveryReceipt.responseDigest",
+      "rule": "ResolvedDeliveryReceipt MUST carry responseDigest and MUST NOT carry artifactManifestDigest",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-ACK-ARTIFACT-MANIFEST",
+      "condition": "DeliveryAcknowledgement.contentKind == ARTIFACT",
+      "left": "pair(DeliveryAcknowledgement.artifactManifestDigest, ResolvedDeliveryReceipt.artifactManifestDigest)",
+      "operator": "all_equal",
+      "right": "digest(ARTIFACT_MANIFEST, ResolvedArtifactManifest)",
+      "resolve": "ResolvedDeliveryReceipt and ResolvedArtifactManifest are both required; ResolvedDeliveryReceipt MUST NOT carry responseDigest",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-ACK-ARTIFACT-CONTENT",
+      "condition": "DeliveryAcknowledgement.contentKind == ARTIFACT",
+      "left": "DeliveryAcknowledgement.receivedContentDigest",
+      "operator": "byte_equal",
+      "right": "ResolvedArtifactManifest.contentDigest",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-ACCEPTANCE-BUYER-SIGNATURE",
+      "left": "AcceptanceReceipt.buyerActorRef",
+      "operator": "byte_equal",
+      "right": "AcceptanceReceipt.signature.issuer",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-ACCEPTANCE-INVOCATION-BUYER",
+      "left": "AcceptanceReceipt.buyerActorRef",
+      "operator": "byte_equal",
+      "right": "ResolvedInvocation.buyerActorRef",
+      "resolve": "ResolvedInvocation is selected by AcceptanceReceipt.invocationId",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-DIRECT-ACCEPTANCE-CONTENT",
+      "condition": "ResolvedInvocation.mode == DIRECT and ResolvedInvocation.state == ACKED",
+      "leftObject": "ResolvedExecutionReceipt",
+      "operator": "same_content_lineage",
+      "rightObject": "ResolvedAcceptanceReceipt",
+      "pairs": [
+        {"execution": "invocationId", "acceptance": "invocationId"},
+        {"execution": "serviceSkuVersionDigest", "acceptance": "serviceSkuVersionDigest"},
+        {"execution": "responseDigest", "acceptance": "responseDigest", "condition": "content kind is RESPONSE"},
+        {"execution": "artifactManifestDigest", "acceptance": "artifactManifestDigest", "condition": "content kind is ARTIFACT"},
+        {"execution": "contentBytes", "acceptance": "contentBytes"}
+      ],
+      "resolve": "ResolvedExecutionReceipt and ResolvedAcceptanceReceipt are selected by Invocation.executionReceiptDigest and Invocation.acceptanceReceiptDigest after both concrete receipt bindings pass",
+      "rule": "Both receipts MUST select the same single content kind; the Buyer cannot accept content different from the Seller's signed complete output",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-PROOF-REFERENCE-TYPE",
+      "quantifier": "for_each ProofBundle.proofs[*]",
+      "left": "ProofReference.objectType",
+      "operator": "byte_equal",
+      "right": "ResolvedProof.objectType",
+      "resolve": "ResolvedProof is the independently fetched object selected by ProofReference.objectDigest",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-PROOF-REFERENCE-ISSUER",
+      "quantifier": "for_each ProofBundle.proofs[*]",
+      "left": "ProofReference.issuer",
+      "operator": "byte_equal",
+      "right": "ResolvedProof.signature.issuer or ResolvedProof.attestation.issuer as selected by objectType",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-PROOF-REFERENCE-KEY",
+      "quantifier": "for_each ProofBundle.proofs[*]",
+      "left": "ProofReference.keyId",
+      "operator": "byte_equal",
+      "right": "ResolvedProof.signature.keyId or ResolvedProof.attestation.keyId as selected by objectType",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-PROOF-REFERENCE-DIGEST",
+      "quantifier": "for_each ProofBundle.proofs[*]",
+      "left": "ProofReference.objectDigest",
+      "operator": "byte_equal",
+      "right": "digest(profile selected by ProofReference.objectType, ResolvedProof)",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-PROOF-REFERENCE-ISSUED-AT",
+      "quantifier": "for_each ProofBundle.proofs[*]",
+      "left": "ProofReference.issuedAt",
+      "operator": "byte_equal",
+      "right": "ResolvedProof.issuedAt; ListingMandate uses validFrom; external credentials use their canonical issuance time",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-PROOF-BUNDLE-INVOCATION",
+      "quantifier": "for_each ProofBundle.proofs[*]",
+      "left": "pair(ProofReference.invocationId, ResolvedProof.invocationId where present)",
+      "operator": "all_equal",
+      "right": "ProofBundle.invocationId",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-PROOF-BUNDLE-SKU",
+      "quantifier": "for_each ProofBundle.proofs[*]",
+      "left": "pair(ProofReference.serviceSkuVersionDigest, ResolvedProof.serviceSkuVersionDigest or ResolvedProof.skuVersionDigest where present)",
+      "operator": "all_equal",
+      "right": "ProofBundle.serviceSkuVersionDigest",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-PROOF-BUNDLE-FUNDING-LINEAGE",
+      "condition": "ProofBundle contains any MandateAuthorizationProof, WalletAuthorizationProof, SettlementReceipt, FundingUnknownObservation, or CommerceReceipt with a resolved SettlementReceipt",
+      "operator": "single_resolved_payment_lineage",
+      "rules": [
+        "ResolvedInvocation.paymentIntentRef == ResolvedPaymentIntent.paymentIntentId",
+        "every resolved funding proof paymentIntentId == ResolvedPaymentIntent.paymentIntentId",
+        "every resolved funding proof paymentIntentFingerprintDigest == ResolvedPaymentIntent.fingerprintDigest",
+        "MandateAuthorizationProof.paymentAuthorizationDigest, WalletAuthorizationProof.paymentAuthorizationDigest, SettlementReceipt.paymentAuthorizationDigest, and FundingUnknownObservation.authorizationDigest when present all equal ResolvedPaymentIntent.authorizationDigest",
+        "a CommerceReceipt contributes its independently resolved SettlementReceipt to the same checks"
+      ],
+      "resolve": "ResolvedInvocation is selected by ProofBundle.invocationId; ResolvedPaymentIntent is selected only by ResolvedInvocation.paymentIntentRef; every proof object has already passed reference/type/digest/Invocation/SKU validation",
+      "rule": "Same Invocation and SKU are insufficient: authorization A cannot be composed with settlement B",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-MANDATE-PROOF-PAYMENT-INTENT",
+      "condition": "PaymentIntent.requestedAssurance.authorization == MANDATE_PROTECTED",
+      "leftObject": "MandateAuthorizationProof",
+      "operator": "all_fields_equal",
+      "rightObject": "PaymentIntent",
+      "fieldPairs": [
+        {"proof": "issuer.issuer", "paymentIntent": "fundingAuthority.issuer"},
+        {"proof": "issuer.keyId", "paymentIntent": "fundingAuthority.keyId"},
+        {"proof": "paymentIntentId", "paymentIntent": "paymentIntentId"},
+        {"proof": "paymentIntentFingerprintDigest", "paymentIntent": "fingerprintDigest"},
+        {"proof": "fundingLedgerNamespace", "paymentIntent": "fundingLedgerNamespace"},
+        {"proof": "invocationId", "paymentIntent": "invocationId"},
+        {"proof": "tenantId", "paymentIntent": "tenantId"},
+        {"proof": "memberSuborgId", "paymentIntent": "memberSuborgId"},
+        {"proof": "treasuryProfile", "paymentIntent": "treasuryProfile"},
+        {"proof": "treasuryRef", "paymentIntent": "treasuryRef"},
+        {"proof": "agentId", "paymentIntent": "agentId"},
+        {"proof": "runtimeId", "paymentIntent": "runtimeId"},
+        {"proof": "runtimeCapabilityDigest", "paymentIntent": "runtimeCapabilityDigest"},
+        {"proof": "mandateId", "paymentIntent": "mandateId"},
+        {"proof": "mandateVersion", "paymentIntent": "mandateVersion"},
+        {"proof": "reservationId", "paymentIntent": "reservationId"},
+        {"proof": "challengeDigest", "paymentIntent": "challengeDigest"},
+        {"proof": "serviceSkuVersionDigest", "paymentIntent": "skuVersionDigest"},
+        {"proof": "sellerIdentityRef", "paymentIntent": "sellerIdentityRef"},
+        {"proof": "payeeAddress", "paymentIntent": "payoutAddress", "normalization": "lowercase"},
+        {"proof": "payerAddress", "paymentIntent": "payerAddress", "normalization": "lowercase"},
+        {"proof": "asset", "paymentIntent": "asset", "normalization": "deep_equal"},
+        {"proof": "amountAtomic", "paymentIntent": "amountAtomic"},
+        {"proof": "mode", "paymentIntent": "mode"},
+        {"proof": "requestedAssurance", "paymentIntent": "requestedAssurance", "normalization": "deep_equal"},
+        {"proof": "facilitatorId", "paymentIntent": "facilitatorId"},
+        {"proof": "paymentAuthorizationDigest", "paymentIntent": "authorizationDigest"},
+        {"proof": "expiresAt", "paymentIntent": "expiresAt"}
+      ],
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-MANDATE-PROOF-APPROVED",
+      "left": "MandateAuthorizationProof.decisionCode",
+      "operator": "byte_equal",
+      "right": "APPROVED",
+      "rule": "Only APPROVED is an authorization proof and can satisfy MANDATE_PROTECTED assurance",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-WALLET-PROOF-PAYMENT-INTENT",
+      "condition": "PaymentIntent.requestedAssurance.authorization == WALLET_SIGNED",
+      "leftObject": "WalletAuthorizationProof",
+      "operator": "all_fields_equal",
+      "rightObject": "PaymentIntent",
+      "fieldPairs": [
+        {"proof": "issuer.issuer", "paymentIntent": "fundingAuthority.issuer"},
+        {"proof": "issuer.keyId", "paymentIntent": "fundingAuthority.keyId"},
+        {"proof": "paymentIntentId", "paymentIntent": "paymentIntentId"},
+        {"proof": "paymentIntentFingerprintDigest", "paymentIntent": "fingerprintDigest"},
+        {"proof": "invocationId", "paymentIntent": "invocationId"},
+        {"proof": "serviceSkuVersionDigest", "paymentIntent": "skuVersionDigest"},
+        {"proof": "challengeDigest", "paymentIntent": "challengeDigest"},
+        {"proof": "paymentAuthorizationDigest", "paymentIntent": "authorizationDigest"},
+        {"proof": "expiresAt", "paymentIntent": "expiresAt"},
+        {"proof": "amountAtomic", "paymentIntent": "amountAtomic"},
+        {"proof": "asset", "paymentIntent": "asset", "normalization": "deep_equal"},
+        {"proof": "payerAddress", "paymentIntent": "payerAddress", "normalization": "lowercase"},
+        {"proof": "payeeAddress", "paymentIntent": "payoutAddress", "normalization": "lowercase"},
+        {"proof": "mode", "paymentIntent": "mode"},
+        {"proof": "requestedAssurance", "paymentIntent": "requestedAssurance", "normalization": "deep_equal"},
+        {"proof": "facilitatorId", "paymentIntent": "facilitatorId"}
+      ],
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-WALLET-PROOF-BUYER",
+      "left": "pair(WalletAuthorizationProof.buyerActorRef, WalletAuthorizationProof.issuer.issuer, WalletAuthorizationProof.signature.issuer)",
+      "operator": "all_equal",
+      "right": "PaymentIntent.buyerActorRef",
+      "rule": "The wallet proof signer is the buyer actor authorized by the PaymentIntent, not an arbitrary self-signed actor",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-WALLET-PAYMENT-INTENT-BUYER-DERIVATION",
+      "condition": "PaymentIntent.requestedAssurance.authorization == WALLET_SIGNED",
+      "left": "PaymentIntent.buyerActorRef",
+      "operator": "byte_equal",
+      "right": "wallet_eip155_8453_ || lowercase(strip_0x(PaymentIntent.payerAddress))",
+      "rule": "An anonymous wallet actor is self-certifying and cannot claim another OpenAnt or Agent identity",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-WALLET-PROOF-PAYER-SIGNATURE",
+      "left": "lowercase(WalletAuthorizationProof.payerAddress)",
+      "operator": "byte_equal",
+      "right": "lowercase(recover_eip712_signer(WalletAuthorizationProof.signature))",
+      "rule": "The recovered EIP-712 signer MUST be the PaymentIntent payerAddress; a buyer actor self-signature over another payer is insufficient",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-WALLET-PROOF-X402-EIP3009",
+      "left": "ResolvedTransferWithAuthorizationTypedData",
+      "operator": "exact_structural_and_value_match",
+      "right": "domain={name:USD Coin,version:2,chainId:8453,verifyingContract:Base USDC}; primaryType=TransferWithAuthorization; types=[from address,to address,value uint256,validAfter uint256,validBefore uint256,nonce bytes32]; message={from:lowercase(WalletAuthorizationProof.payerAddress),to:lowercase(WalletAuthorizationProof.payeeAddress),value:WalletAuthorizationProof.amountAtomic,validAfter:0,validBefore:unix_seconds(WalletAuthorizationProof.expiresAt),nonce:0x || raw32(WalletAuthorizationProof.paymentIntentFingerprintDigest)}",
+      "rule": "No extra domain, type, message, or top-level field is accepted. The profile-selected fingerprint covers the common challenge, SKU, buyer, payer, mode, assurance, and settlement context; MANDATE_PROTECTED additionally covers tenant, treasury, mandate, agent, runtime, and capability context. Using its raw 32 bytes as nonce binds exactly that profile without pretending these are EIP-3009 fields.",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-MANDATE-PROOF-VALID-TIME",
+      "left": "MandateAuthorizationProof.issuedAt",
+      "operator": "instant_lte_inclusive",
+      "right": "MandateAuthorizationProof.expiresAt",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-PROOF-BUNDLE-CREATED-AT",
+      "quantifier": "for_each ProofBundle.proofs[*] and its ResolvedProof",
+      "left": "ProofBundle.createdAt",
+      "operator": "instant_gte_inclusive",
+      "right": "pair(ProofReference.issuedAt, ResolvedProof.issuedAt or canonical issuance time)",
+      "rule": "ProofBundle.createdAt MUST be greater than or equal to both correlated issuance instants",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-SETTLEMENT-RECEIPT-PAYMENT-INTENT",
+      "leftObject": "SettlementReceipt",
+      "operator": "all_fields_equal",
+      "rightObject": "PaymentIntent",
+      "fieldPairs": [
+        {"proof": "issuer.issuer", "paymentIntent": "settlementAuthority.issuer"},
+        {"proof": "issuer.keyId", "paymentIntent": "settlementAuthority.keyId"},
+        {"proof": "paymentIntentId", "paymentIntent": "paymentIntentId"},
+        {"proof": "paymentIntentFingerprintDigest", "paymentIntent": "fingerprintDigest"},
+        {"proof": "fundingLedgerNamespace", "paymentIntent": "fundingLedgerNamespace"},
+        {"proof": "invocationId", "paymentIntent": "invocationId"},
+        {"proof": "serviceSkuVersionDigest", "paymentIntent": "skuVersionDigest"},
+        {"proof": "facilitatorId", "paymentIntent": "facilitatorId"},
+        {"proof": "paymentAuthorizationDigest", "paymentIntent": "authorizationDigest"},
+        {"proof": "amountAtomic", "paymentIntent": "amountAtomic"},
+        {"proof": "asset", "paymentIntent": "asset", "normalization": "deep_equal"},
+        {"proof": "payerAddress", "paymentIntent": "payerAddress", "normalization": "lowercase"},
+        {"proof": "payeeAddress", "paymentIntent": "payoutAddress", "normalization": "lowercase"}
+      ],
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-UNKNOWN-OBSERVATION-PAYMENT-INTENT",
+      "leftObject": "FundingUnknownObservation",
+      "operator": "all_fields_equal",
+      "rightObject": "PaymentIntent",
+      "fieldPairs": [
+        {"proof": "issuer.issuer", "paymentIntent": "observationAuthority.issuer"},
+        {"proof": "issuer.keyId", "paymentIntent": "observationAuthority.keyId"},
+        {"proof": "paymentIntentId", "paymentIntent": "paymentIntentId"},
+        {"proof": "paymentIntentFingerprintDigest", "paymentIntent": "fingerprintDigest"},
+        {"proof": "fundingLedgerNamespace", "paymentIntent": "fundingLedgerNamespace"},
+        {"proof": "invocationId", "paymentIntent": "invocationId"},
+        {"proof": "serviceSkuVersionDigest", "paymentIntent": "skuVersionDigest"},
+        {"proof": "authorizationProfile", "paymentIntent": "requestedAssurance.authorization"},
+        {"proof": "reservationId", "paymentIntent": "reservationId", "condition": "authorizationProfile == MANDATE_PROTECTED"},
+        {"proof": "authorizationDigest", "paymentIntent": "authorizationDigest", "condition": "observedState == SETTLEMENT_UNKNOWN"},
+        {"proof": "observedState", "paymentIntent": "state"},
+        {"proof": "reconciliationDeadline", "paymentIntent": "reconciliationDeadline"}
+      ],
+      "derived": "FundingUnknownObservation.unknownBoundary == (PaymentIntent.state == AUTHORIZATION_UNKNOWN ? authorization : settlement)",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-PAYMENT-INTENT-X402-CHALLENGE",
+      "leftObject": "PaymentIntent",
+      "operator": "all_fields_equal",
+      "rightObject": "ResolvedOpenAntX402Extension",
+      "pairs": [
+        {"paymentIntent": "challengeDigest", "challenge": "signature.signedObjectDigest"},
+        {"paymentIntent": "invocationId", "challenge": "invocationId"},
+        {"paymentIntent": "skuVersionDigest", "challenge": "skuVersionDigest"},
+        {"paymentIntent": "sellerIdentityRef", "challenge": "sellerIdentityRef"},
+        {"paymentIntent": "payoutAddress", "challenge": "payoutAddress", "normalization": "lowercase"},
+        {"paymentIntent": "asset", "challenge": "asset", "normalization": "deep_equal"},
+        {"paymentIntent": "amountAtomic", "challenge": "amountAtomic"},
+        {"paymentIntent": "mode", "challenge": "mode"},
+        {"paymentIntent": "requestedAssurance", "challenge": "assurance", "normalization": "deep_equal"},
+        {"paymentIntent": "expiresAt", "challenge": "expiresAt"}
+      ],
+      "resolve": "ResolvedOpenAntX402Extension is the independently verified signed object selected by PaymentIntent.challengeDigest",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-RUNTIME-CAPABILITY-PAYMENT-INTENT",
+      "condition": "PaymentIntent.requestedAssurance.authorization == MANDATE_PROTECTED",
+      "leftObject": "RuntimeCapability",
+      "operator": "authorized_digest_scope",
+      "rightObject": "PaymentIntent",
+      "pairs": [
+        {"capability": "runtimeCapabilityDigest", "paymentIntent": "runtimeCapabilityDigest"},
+        {"capability": "signature.issuer", "paymentIntent": "fundingAuthority.issuer"},
+        {"capability": "signature.keyId", "paymentIntent": "fundingAuthority.keyId"},
+        {"capability": "runtimeId", "paymentIntent": "runtimeId"},
+        {"capability": "agentId", "paymentIntent": "agentId"},
+        {"capability": "buyerActorRef", "paymentIntent": "buyerActorRef"},
+        {"capability": "mandateId", "paymentIntent": "mandateId"},
+        {"capability": "mandateVersion", "paymentIntent": "mandateVersion"},
+        {"capability": "serviceSkuVersionDigest", "paymentIntent": "skuVersionDigest"}
+      ],
+      "timeRule": "RuntimeCapability.issuedAt <= PaymentIntent.createdAt and PaymentIntent.expiresAt <= RuntimeCapability.expiresAt, inclusive",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-RUNTIME-CAPABILITY-SIGNATURE",
+      "left": "tuple(RuntimeCapability.issuer.issuer, RuntimeCapability.issuer.keyId, RuntimeCapability.runtimeCapabilityDigest)",
+      "operator": "tuple_equal",
+      "right": "tuple(RuntimeCapability.signature.issuer, RuntimeCapability.signature.keyId, RuntimeCapability.signature.signedObjectDigest)",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-TASK-AGREEMENT-SIGNATURE",
+      "left": "tuple(TaskAgreementVersion.issuer.issuer, TaskAgreementVersion.issuer.keyId, TaskAgreementVersion.taskAgreementVersionDigest)",
+      "operator": "tuple_equal",
+      "right": "tuple(TaskAgreementVersion.signature.issuer, TaskAgreementVersion.signature.keyId, TaskAgreementVersion.signature.signedObjectDigest)",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-PAYMENT-INTENT-INVOCATION-BUYER",
+      "left": "pair(PaymentIntent.invocationId, PaymentIntent.buyerActorRef)",
+      "operator": "pair_equal",
+      "right": "pair(ResolvedInvocation.invocationId, ResolvedInvocation.buyerActorRef)",
+      "rule": "buyerActorRef identifies either the delegated Agent actor for MANDATE_PROTECTED or the wallet actor for WALLET_SIGNED; it is always bound to the Invocation",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-MANDATE-PAYMENT-INTENT-AGENT",
+      "condition": "PaymentIntent.requestedAssurance.authorization == MANDATE_PROTECTED",
+      "left": "PaymentIntent.agentId",
+      "operator": "byte_equal",
+      "right": "PaymentIntent.buyerActorRef",
+      "rule": "Only the delegated mandate profile carries agent/runtime/capability fields; the Agent is the Invocation buyer actor",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-INVOCATION-SKU-ROOT",
+      "left": "pair(Invocation.serviceSkuId, Invocation.skuVersionDigest)",
+      "operator": "pair_equal",
+      "right": "pair(ResolvedServiceSKUVersion.serviceSkuId, digest(SERVICE_SKU_VERSION, ResolvedServiceSKUVersion))",
+      "resolve": "ResolvedServiceSKUVersion and its three child roots MUST pass all SKU resolution bindings",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-INVOCATION-DEFINITION",
+      "left": "Invocation.operationId",
+      "operator": "all_equal",
+      "right": "pair(ResolvedServiceSKUVersion.operationId, ResolvedServiceDefinitionVersion.operationId)",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-INVOCATION-ENDPOINT",
+      "left": "Invocation.mode",
+      "operator": "byte_equal",
+      "right": "ResolvedEndpointDescriptorVersion.mode",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-STAGING-INVOCATION-REQUEST",
+      "left": "tuple(OutputStagingReceipt.invocationId, OutputStagingReceipt.serviceSkuVersionDigest, OutputStagingReceipt.requestDigest)",
+      "operator": "tuple_equal",
+      "right": "tuple(ResolvedInvocation.invocationId, ResolvedInvocation.skuVersionDigest, ResolvedInvocation.requestDigest)",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-EXECUTION-INVOCATION-REQUEST",
+      "left": "tuple(ExecutionReceipt.invocationId, ExecutionReceipt.serviceSkuVersionDigest, ExecutionReceipt.requestDigest)",
+      "operator": "tuple_equal",
+      "right": "tuple(ResolvedInvocation.invocationId, ResolvedInvocation.skuVersionDigest, ResolvedInvocation.requestDigest)",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-COMMERCE-INVOCATION-REQUEST",
+      "left": "tuple(CommerceReceipt.invocationId, CommerceReceipt.serviceSkuVersionDigest, CommerceReceipt.requestDigest)",
+      "operator": "tuple_equal",
+      "right": "tuple(ResolvedInvocation.invocationId, ResolvedInvocation.skuVersionDigest, ResolvedInvocation.requestDigest)",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-HOSTED-RECOVERY-CONTENT",
+      "leftObject": "OutputStagingReceipt",
+      "operator": "same_content_lineage",
+      "rightObject": "DeliveryReceipt",
+      "pairs": [
+        {"staging": "invocationId", "delivery": "invocationId"},
+        {"staging": "serviceSkuVersionDigest", "delivery": "serviceSkuVersionDigest"},
+        {"staging": "responseDigest", "delivery": "responseDigest", "condition": "content kind is RESPONSE"},
+        {"staging": "artifactManifestDigest", "delivery": "artifactManifestDigest", "condition": "content kind is ARTIFACT"},
+        {"staging": "contentBytes", "delivery": "contentBytes"},
+        {"staging": "availableUntil", "delivery": "availableUntil"}
+      ],
+      "rule": "Both receipts MUST select the same single content kind; neither receipt may switch response/artifact domains",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-INVOCATION-PAYMENT-PROOF",
+      "left": "Invocation.paymentProofDigest",
+      "operator": "resolved_receipt_scope",
+      "right": "MandateAuthorizationProof when requested authorization is MANDATE_PROTECTED, WalletAuthorizationProof when WALLET_SIGNED; digest, invocationId, serviceSkuVersionDigest, and paymentIntentId MUST match",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-INVOCATION-STAGING-PROOF",
+      "left": "Invocation.outputStagingReceiptDigest",
+      "operator": "resolved_receipt_scope",
+      "right": "OutputStagingReceipt claimsDigest with equal invocationId and serviceSkuVersionDigest",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-INVOCATION-EXECUTION-PROOF",
+      "left": "Invocation.executionReceiptDigest",
+      "operator": "resolved_receipt_scope",
+      "right": "ExecutionReceipt claimsDigest with equal invocationId and serviceSkuVersionDigest",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-INVOCATION-SETTLEMENT-PROOF",
+      "left": "Invocation.settlementReceiptDigest",
+      "operator": "resolved_receipt_scope",
+      "right": "SettlementReceipt claimsDigest with equal invocationId, serviceSkuVersionDigest, and paymentIntentId",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-INVOCATION-DELIVERY-PROOF",
+      "left": "Invocation.deliveryReceiptDigest",
+      "operator": "resolved_receipt_scope",
+      "right": "DeliveryReceipt claimsDigest with equal invocationId and serviceSkuVersionDigest",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-INVOCATION-UNKNOWN-PROOF",
+      "left": "Invocation.paymentUnknownObservationProofDigest",
+      "operator": "resolved_receipt_scope",
+      "right": "FundingUnknownObservation claimsDigest with equal invocationId, serviceSkuVersionDigest, paymentIntentId, and reconciliationDeadline",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-INVOCATION-ACK-PROOF",
+      "left": "Invocation.acknowledgementDigest",
+      "operator": "resolved_attestation_scope",
+      "right": "digest(DELIVERY_ACKNOWLEDGEMENT, ResolvedDeliveryAcknowledgement) with equal invocationId and buyerActorRef",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-INVOCATION-ACCEPTANCE-PROOF",
+      "left": "Invocation.acceptanceReceiptDigest",
+      "operator": "resolved_receipt_scope",
+      "right": "AcceptanceReceipt claimsDigest with equal invocationId, serviceSkuVersionDigest, and buyerActorRef",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-PAYMENT-INTENT-SETTLEMENT-PROOF",
+      "left": "PaymentIntent.settlementReceiptDigest",
+      "operator": "resolved_receipt_scope",
+      "right": "SettlementReceipt claimsDigest with equal invocationId, serviceSkuVersionDigest, and paymentIntentId",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-PAYMENT-INTENT-UNKNOWN-PROOF",
+      "left": "PaymentIntent.unknownObservationProofDigest",
+      "operator": "resolved_receipt_scope",
+      "right": "FundingUnknownObservation claimsDigest with equal invocationId, serviceSkuVersionDigest, paymentIntentId, observedState, unknownBoundary, and reconciliationDeadline",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-STAGING-RECEIPT-ENDPOINT-ISSUER",
+      "left": "pair(OutputStagingReceipt.signature.issuer, OutputStagingReceipt.signature.keyId)",
+      "operator": "pair_member",
+      "right": "ResolvedEndpointDescriptorVersion.stagingIssuerKeys",
+      "resolve": "OutputStagingReceipt.serviceSkuVersionDigest selects ResolvedServiceSKUVersion; its endpointDescriptorVersionDigest selects ResolvedEndpointDescriptorVersion",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-STAGING-RECEIPT-TRUSTED-CUSTODY-ISSUER",
+      "left": "pair(OutputStagingReceipt.signature.issuer, OutputStagingReceipt.signature.keyId)",
+      "operator": "pair_member",
+      "right": "VerifierPolicy.trustedHostedCustodyIssuerKeys",
+      "rule": "VerifierPolicy is OpenAnt/verifier-local configuration and cannot be authored by the Seller, Listing, SKU, or EndpointDescriptor",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-COMMERCE-SETTLEMENT-RECEIPT",
+      "left": "CommerceReceipt.settlementReceiptDigest",
+      "operator": "byte_equal",
+      "right": "digest(RECEIPT_CLAIMS, ResolvedSettlementReceipt)",
+      "resolve": "ResolvedSettlementReceipt is selected by CommerceReceipt.settlementReceiptDigest and MUST have objectType SettlementReceipt with equal invocationId and serviceSkuVersionDigest",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-COMMERCE-RECEIPT-ENDPOINT-ISSUER",
+      "left": "pair(CommerceReceipt.signature.issuer, CommerceReceipt.signature.keyId)",
+      "operator": "pair_member",
+      "right": "ResolvedEndpointDescriptorVersion.commerceIssuerKeys",
+      "resolve": "CommerceReceipt.serviceSkuVersionDigest resolves the SKU and its EndpointDescriptorVersion",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-EXECUTION-RECEIPT-ENDPOINT-ISSUER",
+      "left": "pair(ExecutionReceipt.signature.issuer, ExecutionReceipt.signature.keyId)",
+      "operator": "pair_member",
+      "right": "ResolvedEndpointDescriptorVersion.executionIssuerKeys",
+      "resolve": "ExecutionReceipt.serviceSkuVersionDigest selects ResolvedServiceSKUVersion; its endpointDescriptorVersionDigest selects ResolvedEndpointDescriptorVersion",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-DELIVERY-RECEIPT-ENDPOINT-ISSUER",
+      "left": "pair(DeliveryReceipt.signature.issuer, DeliveryReceipt.signature.keyId)",
+      "operator": "pair_member",
+      "right": "ResolvedEndpointDescriptorVersion.deliveryIssuerKeys",
+      "resolve": "DeliveryReceipt.serviceSkuVersionDigest selects ResolvedServiceSKUVersion; its endpointDescriptorVersionDigest selects ResolvedEndpointDescriptorVersion",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-DELIVERY-RECEIPT-TRUSTED-CUSTODY-ISSUER",
+      "left": "pair(DeliveryReceipt.signature.issuer, DeliveryReceipt.signature.keyId)",
+      "operator": "pair_member",
+      "right": "VerifierPolicy.trustedHostedCustodyIssuerKeys",
+      "rule": "A Seller-provided endpoint key cannot independently assert Hosted delivery or custody",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-ENDPOINT-ISSUER-ROLE-SEPARATION",
+      "left": "role sets in ResolvedEndpointDescriptorVersion",
+      "operator": "role_sets_disjoint_except",
+      "right": "only stagingIssuerKeys and deliveryIssuerKeys MAY overlap",
+      "rules": [
+        "executionIssuerKeys is disjoint from stagingIssuerKeys, deliveryIssuerKeys, and commerceIssuerKeys",
+        "commerceIssuerKeys is disjoint from stagingIssuerKeys and deliveryIssuerKeys",
+        "stagingIssuerKeys and deliveryIssuerKeys MAY overlap for one Hosted gateway"
+      ],
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-SELLER-CREDENTIAL-LISTING-SUBJECT",
+      "left": "SellerIdentityCredential.sellerIdentityRef",
+      "operator": "byte_equal",
+      "right": "ResolvedListingMandate.sellerIdentityRef",
+      "resolve": "Both objects are resolved from the same ProofBundle and serviceSkuVersionDigest scope",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-SELLER-CREDENTIAL-VALID-TIME",
+      "left": "SellerIdentityCredential.issuedAt",
+      "operator": "instant_lte_inclusive",
+      "right": "SellerIdentityCredential.expiresAt",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-SELLER-CREDENTIAL-BUNDLE-TIME",
+      "left": "ProofBundle.createdAt",
+      "operator": "instant_in_closed_interval",
+      "right": "[ResolvedSellerIdentityCredential.issuedAt, ResolvedSellerIdentityCredential.expiresAt]",
+      "rule": "VERIFIED_SELLER assurance is evaluated at ProofBundle.createdAt; both interval endpoints are inclusive",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-SELLER-CREDENTIAL-SIGNATURE",
+      "left": "tuple(SellerIdentityCredential.issuer.issuer, SellerIdentityCredential.issuer.keyId, SellerIdentityCredential.claimsDigest)",
+      "operator": "tuple_equal",
+      "right": "tuple(SellerIdentityCredential.signature.issuer, SellerIdentityCredential.signature.keyId, SellerIdentityCredential.signature.signedObjectDigest)",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-SELLER-CREDENTIAL-TRUSTED-ISSUER",
+      "left": "pair(SellerIdentityCredential.signature.issuer, SellerIdentityCredential.signature.keyId)",
+      "operator": "pair_member",
+      "right": "VerifierPolicy.trustedSellerIdentityIssuerKeys",
+      "rule": "VerifierPolicy is local trusted configuration and MUST NOT be supplied by the Seller or ProofBundle",
+      "error": "PROOF_BINDING_MISMATCH"
+    },
+    {
+      "id": "BIND-PAYMENT-REQUIRED-INVOCATION",
+      "authority": "PaymentRequiredOutcome.paymentRequired.extensions.openant.invocationId",
+      "rule": "PaymentRequiredOutcome has no unsigned duplicate invocationId field",
+      "error": "SCHEMA_INVALID"
+    },
+    {
+      "id": "BIND-X402-CHALLENGE-ISSUER",
+      "left": "pair(PaymentRequiredOutcome.paymentRequired.extensions.openant.signature.issuer, PaymentRequiredOutcome.paymentRequired.extensions.openant.signature.keyId)",
+      "operator": "pair_member",
+      "right": "ResolvedListingMandate.authorizedChallengeIssuers",
+      "resolve": "ResolvedListingMandate is selected by PaymentRequiredOutcome.paymentRequired.extensions.openant.listingMandateDigest",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-CHALLENGE-SKU-ROOT",
+      "left": "pair(PaymentRequiredOutcome.paymentRequired.extensions.openant.serviceSkuId, PaymentRequiredOutcome.paymentRequired.extensions.openant.skuVersionDigest)",
+      "operator": "pair_equal",
+      "right": "pair(ResolvedServiceSKUVersion.serviceSkuId, digest(SERVICE_SKU_VERSION, ResolvedServiceSKUVersion))",
+      "resolve": "ResolvedServiceSKUVersion and all three immutable child versions MUST pass BIND-SKU-*-RESOLUTION before accepting the challenge",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-CHALLENGE-DEFINITION",
+      "leftObject": "PaymentRequiredOutcome",
+      "operator": "derived_from_resolved_definition",
+      "rightObject": "ResolvedServiceDefinitionVersion",
+      "pairs": [
+        {"challenge": "paymentRequired.extensions.openant.operationId", "definition": "operationId"},
+        {"challenge": "paymentRequired.resource.mimeType", "definition": "outputMediaType"}
+      ],
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-CHALLENGE-OFFER-TERMS",
+      "leftObject": "PaymentRequiredOutcome.paymentRequired.extensions.openant",
+      "operator": "all_fields_equal",
+      "rightObject": "ResolvedOfferVersion",
+      "pairs": [
+        {"challenge": "amountAtomic", "offer": "amountAtomic"},
+        {"challenge": "asset", "offer": "asset", "normalization": "deep_equal"},
+        {"challenge": "payoutAddress", "offer": "payoutAddress", "normalization": "lowercase"},
+        {"challenge": "assurance", "offer": "minimumAssurance", "normalization": "deep_equal"}
+      ],
+      "rule": "The standard x402 acceptance is separately bound to the signed extension; changing both copies still fails against ResolvedOfferVersion",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-CHALLENGE-ENDPOINT",
+      "leftObject": "PaymentRequiredOutcome",
+      "operator": "derived_from_resolved_endpoint",
+      "rightObject": "ResolvedEndpointDescriptorVersion",
+      "pairs": [
+        {"challenge": "paymentRequired.extensions.openant.mode", "endpoint": "mode"},
+        {"challenge": "paymentRequired.resource.url", "endpoint": "invokeUri"},
+        {"challenge": "paymentRequired.extensions.openant.signature.issuer", "endpoint": "challengeIssuer.issuer"},
+        {"challenge": "paymentRequired.extensions.openant.signature.keyId", "endpoint": "challengeIssuer.keyId"}
+      ],
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-X402-INVOCATION-SCOPE",
+      "leftObject": "ResolvedInvocation",
+      "operator": "all_fields_equal",
+      "rightObject": "PaymentRequiredOutcome.paymentRequired.extensions.openant",
+      "pairs": [
+        {"invocation": "invocationId", "challenge": "invocationId"},
+        {"invocation": "operationId", "challenge": "operationId"},
+        {"invocation": "serviceSkuId", "challenge": "serviceSkuId"},
+        {"invocation": "skuVersionDigest", "challenge": "skuVersionDigest"},
+        {"invocation": "requestDigest", "challenge": "requestDigest"},
+        {"invocation": "mode", "challenge": "mode"}
+      ],
+      "resolve": "ResolvedInvocation is independently loaded by the signed extension invocationId; all six signed scope fields MUST match before PaymentIntent creation",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-X402-LISTING-DIGEST",
+      "left": "PaymentRequiredOutcome.paymentRequired.extensions.openant.listingMandateDigest",
+      "operator": "byte_equal",
+      "right": "digest(LISTING_MANDATE, ResolvedListingMandate)",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-X402-LISTING-SKU-ID",
+      "left": "PaymentRequiredOutcome.paymentRequired.extensions.openant.serviceSkuId",
+      "operator": "byte_equal",
+      "right": "ResolvedListingMandate.serviceSkuId",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-X402-LISTING-SKU-DIGEST",
+      "left": "PaymentRequiredOutcome.paymentRequired.extensions.openant.skuVersionDigest",
+      "operator": "byte_equal",
+      "right": "ResolvedListingMandate.skuVersionDigest",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-X402-LISTING-SELLER",
+      "left": "PaymentRequiredOutcome.paymentRequired.extensions.openant.sellerIdentityRef",
+      "operator": "byte_equal",
+      "right": "ResolvedListingMandate.sellerIdentityRef",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-X402-LISTING-VALID-FROM",
+      "left": "ResolvedListingMandate.validFrom",
+      "operator": "instant_lte_inclusive",
+      "right": "PaymentRequiredOutcome.paymentRequired.extensions.openant.issuedAt",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-X402-LISTING-VALID-UNTIL",
+      "left": "PaymentRequiredOutcome.paymentRequired.extensions.openant.expiresAt",
+      "operator": "instant_lte_inclusive",
+      "right": "ResolvedListingMandate.validUntil",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-X402-AMOUNT",
+      "left": "PaymentRequiredOutcome.paymentRequired.accepts[0].amount",
+      "operator": "byte_equal",
+      "right": "PaymentRequiredOutcome.paymentRequired.extensions.openant.amountAtomic",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-X402-PAYOUT",
+      "left": "lowercase(PaymentRequiredOutcome.paymentRequired.accepts[0].payTo)",
+      "operator": "byte_equal",
+      "right": "lowercase(PaymentRequiredOutcome.paymentRequired.extensions.openant.payoutAddress)",
+      "error": "CHALLENGE_INVALID"
+    },
+    {
+      "id": "BIND-X402-ASSET",
+      "left": "lowercase(PaymentRequiredOutcome.paymentRequired.accepts[0].asset)",
+      "operator": "byte_equal",
+      "right": "lowercase(PaymentRequiredOutcome.paymentRequired.extensions.openant.asset.reference)",
+      "error": "CHALLENGE_INVALID"
+    }
+  ],
+  "stateMachines": {
+    "listing": {
+      "authority": "OpenAnt commercial ledger",
+      "initial": "DRAFT",
+      "terminal": [
+        "RETIRED",
+        "EMERGENCY_REVOKED"
+      ],
+      "transitions": [
+        ["DRAFT", "ACTIVE", "seller_listing_mandate_verified"],
+        ["ACTIVE", "SUSPENDED_NEW", "seller_or_openant_stops_new_challenges"],
+        ["SUSPENDED_NEW", "ACTIVE", "seller_authority_revalidated"],
+        ["ACTIVE", "RETIRED", "seller_retires_listing"],
+        ["SUSPENDED_NEW", "RETIRED", "seller_retires_listing"],
+        ["ACTIVE", "EMERGENCY_REVOKED", "key_payout_or_mandate_compromise"],
+        ["SUSPENDED_NEW", "EMERGENCY_REVOKED", "key_payout_or_mandate_compromise"]
+      ]
+    },
+    "invocation": {
+      "authority": "OpenAnt commercial ledger",
+      "initial": "CREATED",
+      "terminal": [
+        "ACKED",
+        "FAILED_BEFORE_SETTLEMENT",
+        "EXPIRED",
+        "RECOVERY_WINDOW_EXPIRED"
+      ],
+      "transitions": [
+        ["CREATED", "PAYMENT_REQUIRED", "signed_challenge_issued"],
+        ["CREATED", "FAILED_BEFORE_SETTLEMENT", "input_or_listing_rejected"],
+        ["CREATED", "EXPIRED", "invocation_deadline_elapsed"],
+        ["PAYMENT_REQUIRED", "PAYMENT_AUTHORIZED", "valid_authorization_proof_observed"],
+        ["PAYMENT_REQUIRED", "FAILED_BEFORE_SETTLEMENT", "payment_rejected_or_known_failed"],
+        ["PAYMENT_REQUIRED", "EXPIRED", "challenge_expired"],
+        ["PAYMENT_AUTHORIZED", "EXECUTING", "payment_verified_and_execution_started"],
+        ["PAYMENT_AUTHORIZED", "FAILED_BEFORE_SETTLEMENT", "verification_or_execution_start_failed"],
+        ["EXECUTING", "OUTPUT_STAGED", "chargeable_output_bytes_staged_and_verified"],
+        ["EXECUTING", "SETTLEMENT_PENDING", "direct_execution_receipt_verified_and_settlement_submitted"],
+        ["EXECUTING", "FAILED_BEFORE_SETTLEMENT", "endpoint_or_output_failed"],
+        ["OUTPUT_STAGED", "SETTLEMENT_PENDING", "settlement_submitted"],
+        ["OUTPUT_STAGED", "FAILED_BEFORE_SETTLEMENT", "settlement_known_rejected"],
+        ["SETTLEMENT_PENDING", "DELIVERABLE", "final_settlement_receipt_observed"],
+        ["SETTLEMENT_PENDING", "ACKED", "direct_final_settlement_and_exact_buyer_acceptance_verified"],
+        ["SETTLEMENT_PENDING", "PAYMENT_UNKNOWN", "settlement_outcome_unknown"],
+        ["SETTLEMENT_PENDING", "FAILED_BEFORE_SETTLEMENT", "settlement_known_rejected"],
+        ["PAYMENT_UNKNOWN", "DELIVERABLE", "reconciliation_proves_final_settlement"],
+        ["PAYMENT_UNKNOWN", "ACKED", "direct_reconciliation_proves_final_settlement_and_exact_buyer_acceptance"],
+        ["PAYMENT_UNKNOWN", "FAILED_BEFORE_SETTLEMENT", "reconciliation_proves_no_settlement"],
+        ["DELIVERABLE", "DELIVERED", "exact_bytes_sent"],
+        ["DELIVERABLE", "RECOVERY_WINDOW_EXPIRED", "unacknowledged_recovery_window_elapsed"],
+        ["DELIVERED", "ACKED", "buyer_delivery_acknowledgement_verified"],
+        ["DELIVERED", "RECOVERY_WINDOW_EXPIRED", "unacknowledged_recovery_window_elapsed"]
+      ],
+      "modeTransitions": {
+        "HOSTED": [
+          ["CREATED", "PAYMENT_REQUIRED"],
+          ["CREATED", "FAILED_BEFORE_SETTLEMENT"],
+          ["CREATED", "EXPIRED"],
+          ["PAYMENT_REQUIRED", "PAYMENT_AUTHORIZED"],
+          ["PAYMENT_REQUIRED", "FAILED_BEFORE_SETTLEMENT"],
+          ["PAYMENT_REQUIRED", "EXPIRED"],
+          ["PAYMENT_AUTHORIZED", "EXECUTING"],
+          ["PAYMENT_AUTHORIZED", "FAILED_BEFORE_SETTLEMENT"],
+          ["EXECUTING", "OUTPUT_STAGED"],
+          ["EXECUTING", "FAILED_BEFORE_SETTLEMENT"],
+          ["OUTPUT_STAGED", "SETTLEMENT_PENDING"],
+          ["OUTPUT_STAGED", "FAILED_BEFORE_SETTLEMENT"],
+          ["SETTLEMENT_PENDING", "DELIVERABLE"],
+          ["SETTLEMENT_PENDING", "PAYMENT_UNKNOWN"],
+          ["SETTLEMENT_PENDING", "FAILED_BEFORE_SETTLEMENT"],
+          ["PAYMENT_UNKNOWN", "DELIVERABLE"],
+          ["PAYMENT_UNKNOWN", "FAILED_BEFORE_SETTLEMENT"],
+          ["DELIVERABLE", "DELIVERED"],
+          ["DELIVERABLE", "RECOVERY_WINDOW_EXPIRED"],
+          ["DELIVERED", "ACKED"],
+          ["DELIVERED", "RECOVERY_WINDOW_EXPIRED"]
+        ],
+        "DIRECT": [
+          ["CREATED", "PAYMENT_REQUIRED"],
+          ["CREATED", "FAILED_BEFORE_SETTLEMENT"],
+          ["CREATED", "EXPIRED"],
+          ["PAYMENT_REQUIRED", "PAYMENT_AUTHORIZED"],
+          ["PAYMENT_REQUIRED", "FAILED_BEFORE_SETTLEMENT"],
+          ["PAYMENT_REQUIRED", "EXPIRED"],
+          ["PAYMENT_AUTHORIZED", "EXECUTING"],
+          ["PAYMENT_AUTHORIZED", "FAILED_BEFORE_SETTLEMENT"],
+          ["EXECUTING", "SETTLEMENT_PENDING"],
+          ["EXECUTING", "FAILED_BEFORE_SETTLEMENT"],
+          ["SETTLEMENT_PENDING", "ACKED"],
+          ["SETTLEMENT_PENDING", "PAYMENT_UNKNOWN"],
+          ["SETTLEMENT_PENDING", "FAILED_BEFORE_SETTLEMENT"],
+          ["PAYMENT_UNKNOWN", "ACKED"],
+          ["PAYMENT_UNKNOWN", "FAILED_BEFORE_SETTLEMENT"]
+        ]
+      }
+    },
+    "paymentIntent": {
+      "authority": "0xkey funding ledger",
+      "initial": "CREATED",
+      "terminal": [
+        "DENIED",
+        "EXPIRED_BEFORE_AUTHORIZATION",
+        "AUTHORIZATION_EXPIRED",
+        "SETTLEMENT_REJECTED",
+        "FINALIZED"
+      ],
+      "authorizationProfileTransitions": {
+        "MANDATE_PROTECTED": [
+          ["CREATED", "RESERVED", "atomic_budget_reservation_committed"],
+          ["CREATED", "DENIED", "policy_or_budget_denied"],
+          ["RESERVED", "AUTHORIZING", "authorization_activity_started"],
+          ["RESERVED", "EXPIRED_BEFORE_AUTHORIZATION", "no_authorization_exposure_proven"],
+          ["AUTHORIZING", "AUTHORIZED", "authorization_and_proof_committed"],
+          ["AUTHORIZING", "DENIED", "authorization_known_failed_and_reservation_released"],
+          ["AUTHORIZING", "AUTHORIZATION_UNKNOWN", "authorization_commit_point_uncertain"],
+          ["AUTHORIZATION_UNKNOWN", "AUTHORIZED", "reconciliation_recovers_authorization"],
+          ["AUTHORIZATION_UNKNOWN", "EXPIRED_BEFORE_AUTHORIZATION", "reconciliation_proves_no_authorization"],
+          ["AUTHORIZED", "SUBMITTED", "settlement_broadcast_or_facilitator_acceptance"],
+          ["AUTHORIZED", "AUTHORIZATION_EXPIRED", "authorization_expired_and_nonce_unused_proven"],
+          ["SUBMITTED", "CONFIRMED", "chain_confirmation_observed"],
+          ["SUBMITTED", "SETTLEMENT_UNKNOWN", "settlement_commit_point_uncertain"],
+          ["SUBMITTED", "SETTLEMENT_REJECTED", "settlement_known_rejected"],
+          ["SETTLEMENT_UNKNOWN", "CONFIRMED", "reconciliation_finds_confirmed_transfer"],
+          ["SETTLEMENT_UNKNOWN", "SUBMITTED", "same_authorization_safely_rebroadcast"],
+          ["SETTLEMENT_UNKNOWN", "SETTLEMENT_REJECTED", "reconciliation_proves_rejection"],
+          ["CONFIRMED", "FINALIZED", "finality_policy_satisfied"],
+          ["CONFIRMED", "SETTLEMENT_UNKNOWN", "pre_finality_chain_reorganization"]
+        ],
+        "WALLET_SIGNED": [
+          ["CREATED", "AUTHORIZING", "wallet_signature_requested"],
+          ["CREATED", "DENIED", "wallet_authorization_declined_or_invalid"],
+          ["CREATED", "EXPIRED_BEFORE_AUTHORIZATION", "challenge_expired_before_wallet_authorization"],
+          ["AUTHORIZING", "AUTHORIZED", "authorization_and_proof_committed"],
+          ["AUTHORIZING", "DENIED", "wallet_authorization_known_failed"],
+          ["AUTHORIZING", "AUTHORIZATION_UNKNOWN", "authorization_commit_point_uncertain"],
+          ["AUTHORIZATION_UNKNOWN", "AUTHORIZED", "reconciliation_recovers_authorization"],
+          ["AUTHORIZATION_UNKNOWN", "EXPIRED_BEFORE_AUTHORIZATION", "reconciliation_proves_no_authorization"],
+          ["AUTHORIZED", "SUBMITTED", "settlement_broadcast_or_facilitator_acceptance"],
+          ["AUTHORIZED", "AUTHORIZATION_EXPIRED", "authorization_expired_and_nonce_unused_proven"],
+          ["SUBMITTED", "CONFIRMED", "chain_confirmation_observed"],
+          ["SUBMITTED", "SETTLEMENT_UNKNOWN", "settlement_commit_point_uncertain"],
+          ["SUBMITTED", "SETTLEMENT_REJECTED", "settlement_known_rejected"],
+          ["SETTLEMENT_UNKNOWN", "CONFIRMED", "reconciliation_finds_confirmed_transfer"],
+          ["SETTLEMENT_UNKNOWN", "SUBMITTED", "same_authorization_safely_rebroadcast"],
+          ["SETTLEMENT_UNKNOWN", "SETTLEMENT_REJECTED", "reconciliation_proves_rejection"],
+          ["CONFIRMED", "FINALIZED", "finality_policy_satisfied"],
+          ["CONFIRMED", "SETTLEMENT_UNKNOWN", "pre_finality_chain_reorganization"]
+        ]
+      },
+      "transitions": [
+        ["CREATED", "RESERVED", "atomic_budget_reservation_committed"],
+        ["CREATED", "AUTHORIZING", "wallet_signature_requested"],
+        ["CREATED", "DENIED", "authorization_denied_before_exposure"],
+        ["CREATED", "EXPIRED_BEFORE_AUTHORIZATION", "authorization_window_elapsed_before_exposure"],
+        ["RESERVED", "AUTHORIZING", "authorization_activity_started"],
+        ["RESERVED", "EXPIRED_BEFORE_AUTHORIZATION", "no_authorization_exposure_proven"],
+        ["AUTHORIZING", "AUTHORIZED", "authorization_and_proof_committed"],
+        ["AUTHORIZING", "DENIED", "authorization_known_failed_and_reservation_released"],
+        ["AUTHORIZING", "AUTHORIZATION_UNKNOWN", "authorization_commit_point_uncertain"],
+        ["AUTHORIZATION_UNKNOWN", "AUTHORIZED", "reconciliation_recovers_authorization"],
+        ["AUTHORIZATION_UNKNOWN", "EXPIRED_BEFORE_AUTHORIZATION", "reconciliation_proves_no_authorization"],
+        ["AUTHORIZED", "SUBMITTED", "settlement_broadcast_or_facilitator_acceptance"],
+        ["AUTHORIZED", "AUTHORIZATION_EXPIRED", "authorization_expired_and_nonce_unused_proven"],
+        ["SUBMITTED", "CONFIRMED", "chain_confirmation_observed"],
+        ["SUBMITTED", "SETTLEMENT_UNKNOWN", "settlement_commit_point_uncertain"],
+        ["SUBMITTED", "SETTLEMENT_REJECTED", "settlement_known_rejected"],
+        ["SETTLEMENT_UNKNOWN", "CONFIRMED", "reconciliation_finds_confirmed_transfer"],
+        ["SETTLEMENT_UNKNOWN", "SUBMITTED", "same_authorization_safely_rebroadcast"],
+        ["SETTLEMENT_UNKNOWN", "SETTLEMENT_REJECTED", "reconciliation_proves_rejection"],
+        ["CONFIRMED", "FINALIZED", "finality_policy_satisfied"],
+        ["CONFIRMED", "SETTLEMENT_UNKNOWN", "pre_finality_chain_reorganization"]
+      ]
+    }
+  },
+  "errors": [
+    {"code": "SCHEMA_INVALID", "retryable": false, "boundary": "protocol"},
+    {"code": "UNSUPPORTED_PROTOCOL_VERSION", "retryable": false, "boundary": "protocol"},
+    {"code": "CHALLENGE_INVALID", "retryable": false, "boundary": "challenge"},
+    {"code": "CHALLENGE_EXPIRED", "retryable": true, "boundary": "challenge"},
+    {"code": "LISTING_REVOKED", "retryable": false, "boundary": "catalog"},
+    {"code": "MANDATE_NOT_FOUND", "retryable": false, "boundary": "authorization"},
+    {"code": "MANDATE_SCOPE_DENIED", "retryable": false, "boundary": "authorization"},
+    {"code": "APPROVAL_REQUIRED", "retryable": false, "boundary": "authorization"},
+    {"code": "BUDGET_EXCEEDED", "retryable": false, "boundary": "budget"},
+    {"code": "RESERVATION_CONFLICT", "retryable": true, "boundary": "budget"},
+    {"code": "IDEMPOTENCY_FINGERPRINT_CONFLICT", "retryable": false, "boundary": "protocol"},
+    {"code": "AUTHORIZATION_FAILED", "retryable": true, "boundary": "authorization"},
+    {"code": "AUTHORIZATION_UNKNOWN", "retryable": true, "boundary": "authorization"},
+    {"code": "PAYMENT_PATH_UNAVAILABLE", "retryable": true, "boundary": "facilitator"},
+    {"code": "SETTLEMENT_UNKNOWN", "retryable": true, "boundary": "settlement"},
+    {"code": "SETTLEMENT_REJECTED", "retryable": false, "boundary": "settlement"},
+    {"code": "OUTPUT_NOT_CHARGEABLE", "retryable": false, "boundary": "execution"},
+    {"code": "OUTPUT_NOT_STAGED", "retryable": true, "boundary": "content_escrow"},
+    {"code": "PROOF_INCOMPLETE", "retryable": true, "boundary": "proof"},
+    {"code": "PROOF_BINDING_MISMATCH", "retryable": false, "boundary": "proof"},
+    {"code": "TENANT_CONTEXT_MISMATCH", "retryable": false, "boundary": "tenant"},
+    {"code": "ILLEGAL_STATE_TRANSITION", "retryable": false, "boundary": "state_machine"}
+  ],
+  "digestProfiles": {
+    "algorithm": "SHA-256",
+    "output": "the literal prefix sha256: followed by 64 lowercase hexadecimal characters",
+    "structuredCanonicalization": "RFC 8785 JCS over the exact JSON projection named by the profile",
+    "structuredFraming": "UTF8(openant-commerce) || 0x00 || UTF8(wireVersion) || 0x00 || UTF8(profileName) || 0x00 || JCS(preimage)",
+    "byteFraming": "UTF8(openant-commerce) || 0x00 || UTF8(wireVersion) || 0x00 || UTF8(profileName) || 0x00 || UINT64_BE(byteLength) || exactBytes",
+    "profiles": {
+      "SERVICE_DEFINITION_VERSION": {"input": "ServiceDefinitionVersion", "exclude": ["versionDigest"], "outputFields": ["versionDigest"]},
+      "OFFER_VERSION": {"input": "OfferVersion", "exclude": ["versionDigest"], "outputFields": ["versionDigest"]},
+      "ENDPOINT_DESCRIPTOR_VERSION": {"input": "EndpointDescriptorVersion", "exclude": ["versionDigest"], "outputFields": ["versionDigest"]},
+      "SERVICE_SKU_VERSION": {"input": "ServiceSKUVersion", "exclude": ["skuVersionDigest"], "outputFields": ["skuVersionDigest", "serviceSkuVersionDigest"]},
+      "TASK_AGREEMENT_VERSION": {"input": "TaskAgreementVersion", "inputSchema": "#/$defs/taskAgreementVersion", "exclude": ["taskAgreementVersionDigest", "signature"], "outputFields": ["taskAgreementVersionDigest", "signature.signedObjectDigest"]},
+      "RUNTIME_CAPABILITY": {"input": "RuntimeCapability", "inputSchema": "#/$defs/runtimeCapability", "exclude": ["runtimeCapabilityDigest", "signature"], "outputFields": ["runtimeCapabilityDigest", "signature.signedObjectDigest"]},
+      "LISTING_MANDATE": {"input": "ListingMandate", "exclude": ["signature"], "outputFields": ["listingMandateDigest", "signature.signedObjectDigest"]},
+      "SELLER_IDENTITY_CREDENTIAL": {"input": "SellerIdentityCredential", "inputSchema": "#/$defs/sellerIdentityCredential", "exclude": ["claimsDigest", "signature"], "outputFields": ["claimsDigest", "signature.signedObjectDigest"]},
+      "OPENANT_X402_EXTENSION": {"input": "OpenAntX402Extension", "exclude": ["signature"], "outputFields": ["challengeDigest", "signature.signedObjectDigest"]},
+      "RECEIPT_CLAIMS": {"input": "one concrete ReceiptEnvelope variant", "exclude": ["claimsDigest", "signature"], "outputFields": ["claimsDigest", "signature.signedObjectDigest", "paymentProofDigest", "outputStagingReceiptDigest", "settlementReceiptDigest", "deliveryReceiptDigest", "unknownObservationProofDigest"]},
+      "DELIVERY_ACKNOWLEDGEMENT": {"input": "DeliveryAcknowledgement", "exclude": ["attestation"], "outputFields": ["acknowledgementDigest", "attestation.signedObjectDigest"]},
+      "ARTIFACT_MANIFEST": {"input": "ArtifactManifest", "exclude": [], "outputFields": ["artifactManifestDigest"]},
+      "PROOF_BUNDLE_MANIFEST": {"input": "ProofBundle", "exclude": ["manifestDigest"], "outputFields": ["manifestDigest"]},
+      "PAYMENT_TERMS": {"input": "PaymentRequiredOutcome.paymentRequired.accepts[0]", "exclude": [], "outputFields": ["paymentTermsDigest"]},
+      "PAYMENT_INTENT_FINGERPRINT": {"input": "PaymentIntent", "includeOnly": "idempotency.paymentIntentFingerprintCommonFields plus the exact idempotency.paymentIntentFingerprintConditionalFields entry selected by requestedAssurance.authorization; every selected path is required and every unselected profile path is forbidden", "outputFields": ["fingerprintDigest"]},
+      "PAYMENT_AUTHORIZATION": {"input": "the exact Phase 0 x402 v2 exact EIP-3009 TransferWithAuthorization TypedData: fixed Base USDC domain, closed six-field type, and message derived from payer, payee, amountAtomic, expiresAt, and PaymentIntent fingerprint nonce", "inputSchema": "closed algorithmic profile specified by BIND-WALLET-PROOF-X402-EIP3009", "exclude": [], "outputFields": ["paymentAuthorizationDigest", "authorizationDigest", "WalletAuthorizationProof.signature.signedObjectDigest"]},
+      "REQUEST_BYTES": {"input": "exact decoded HTTP request body octets accepted for this Invocation; zero bytes are allowed", "framing": "byteFraming", "outputFields": ["requestDigest"]},
+      "RESPONSE_BYTES": {"input": "exact response body octets staged and later delivered without transformation", "framing": "byteFraming", "outputFields": ["responseDigest"]},
+      "ARTIFACT_BYTES": {"input": "exact artifact octets staged and later delivered without transformation", "framing": "byteFraming", "outputFields": ["contentDigest"]},
+      "TRANSACTION_REFERENCE": {"input": "object {network, transactionHash} with transactionHash encoded as a lowercase 0x-prefixed chain-native value", "exclude": [], "outputFields": ["transactionDigest"]}
+    },
+    "referenceFields": {
+      "challengeDigest": "OPENANT_X402_EXTENSION",
+      "skuVersionDigest": "SERVICE_SKU_VERSION",
+      "serviceSkuVersionDigest": "SERVICE_SKU_VERSION",
+      "serviceDefinitionVersionDigest": "SERVICE_DEFINITION_VERSION",
+      "offerVersionDigest": "OFFER_VERSION",
+      "endpointDescriptorVersionDigest": "ENDPOINT_DESCRIPTOR_VERSION",
+      "taskAgreementVersionDigest": "TASK_AGREEMENT_VERSION",
+      "runtimeCapabilityDigest": "RUNTIME_CAPABILITY",
+      "listingMandateDigest": "LISTING_MANDATE",
+      "objectDigest": "the profile selected by ProofReference.objectType",
+      "paymentTermsDigest": "PAYMENT_TERMS",
+      "fingerprintDigest": "PAYMENT_INTENT_FINGERPRINT",
+      "paymentIntentFingerprintDigest": "PAYMENT_INTENT_FINGERPRINT",
+      "requestDigest": "REQUEST_BYTES",
+      "responseDigest": "RESPONSE_BYTES",
+      "contentDigest": "ARTIFACT_BYTES",
+      "receivedContentDigest": "DeliveryAcknowledgement.contentKind selects RESPONSE_BYTES or ARTIFACT_BYTES",
+      "artifactManifestDigest": "ARTIFACT_MANIFEST",
+      "claimsDigest": "RECEIPT_CLAIMS",
+      "paymentProofDigest": "RECEIPT_CLAIMS",
+      "executionReceiptDigest": "RECEIPT_CLAIMS",
+      "outputStagingReceiptDigest": "RECEIPT_CLAIMS",
+      "settlementReceiptDigest": "RECEIPT_CLAIMS",
+      "deliveryReceiptDigest": "RECEIPT_CLAIMS",
+      "unknownObservationProofDigest": "RECEIPT_CLAIMS",
+      "paymentUnknownObservationProofDigest": "RECEIPT_CLAIMS",
+      "acceptanceReceiptDigest": "RECEIPT_CLAIMS",
+      "acknowledgementDigest": "DELIVERY_ACKNOWLEDGEMENT",
+      "manifestDigest": "PROOF_BUNDLE_MANIFEST",
+      "paymentAuthorizationDigest": "PAYMENT_AUTHORIZATION",
+      "authorizationDigest": "PAYMENT_AUTHORIZATION",
+      "transactionDigest": "TRANSACTION_REFERENCE",
+      "signedObjectDigest": "the structured profile selected by the enclosing signed object"
+    },
+    "pathBindings": [
+      {
+        "profile": "SERVICE_DEFINITION_VERSION",
+        "paths": ["serviceDefinitionVersion.versionDigest"]
+      },
+      {
+        "profile": "OFFER_VERSION",
+        "paths": ["offerVersion.versionDigest"]
+      },
+      {
+        "profile": "ENDPOINT_DESCRIPTOR_VERSION",
+        "paths": ["endpointDescriptorVersion.versionDigest"]
+      },
+      {
+        "profile": "SERVICE_SKU_VERSION",
+        "paths": [
+          "acceptanceReceipt.serviceSkuVersionDigest",
+          "commerceOperation.serviceSkuVersionDigest",
+          "commerceReceipt.serviceSkuVersionDigest",
+          "deliveryReceipt.serviceSkuVersionDigest",
+          "errorContext.serviceSkuVersionDigest",
+          "executionReceipt.serviceSkuVersionDigest",
+          "fundingUnknownObservation.serviceSkuVersionDigest",
+          "invocation.skuVersionDigest",
+          "listingMandate.skuVersionDigest",
+          "mandateAuthorizationProof.serviceSkuVersionDigest",
+          "openAntX402Extension.skuVersionDigest",
+          "outputStagingReceipt.serviceSkuVersionDigest",
+          "paymentIntent.skuVersionDigest",
+          "proofBundle.serviceSkuVersionDigest",
+          "proofReference.serviceSkuVersionDigest",
+          "serviceSkuVersion.skuVersionDigest",
+          "settlementReceipt.serviceSkuVersionDigest",
+          "taskAgreementVersion.serviceSkuVersionDigest",
+          "runtimeCapability.serviceSkuVersionDigest",
+          "walletAuthorizationProof.serviceSkuVersionDigest"
+        ]
+      },
+      {
+        "profile": "SERVICE_DEFINITION_VERSION",
+        "paths": ["serviceSkuVersion.serviceDefinitionVersionDigest"]
+      },
+      {
+        "profile": "OFFER_VERSION",
+        "paths": ["serviceSkuVersion.offerVersionDigest"]
+      },
+      {
+        "profile": "ENDPOINT_DESCRIPTOR_VERSION",
+        "paths": ["serviceSkuVersion.endpointDescriptorVersionDigest"]
+      },
+      {
+        "profile": "TASK_AGREEMENT_VERSION",
+        "paths": [
+          "commerceOperation.taskAgreementVersionDigest",
+          "taskAgreementVersion.taskAgreementVersionDigest"
+        ]
+      },
+      {
+        "profile": "RUNTIME_CAPABILITY",
+        "paths": [
+          "mandateAuthorizationProof.runtimeCapabilityDigest",
+          "paymentIntent.runtimeCapabilityDigest",
+          "runtimeCapability.runtimeCapabilityDigest"
+        ]
+      },
+      {
+        "profile": "LISTING_MANDATE",
+        "paths": ["openAntX402Extension.listingMandateDigest"]
+      },
+      {
+        "profile": "OPENANT_X402_EXTENSION",
+        "paths": [
+          "mandateAuthorizationProof.challengeDigest",
+          "paymentIntent.challengeDigest",
+          "walletAuthorizationProof.challengeDigest"
+        ]
+      },
+      {
+        "profile": "RECEIPT_CLAIMS",
+        "paths": [
+          "commerceReceipt.settlementReceiptDigest",
+          "deliveryAcknowledgement.deliveryReceiptDigest",
+          "invocation.deliveryReceiptDigest",
+          "invocation.executionReceiptDigest",
+          "invocation.outputStagingReceiptDigest",
+          "invocation.paymentProofDigest",
+          "invocation.paymentUnknownObservationProofDigest",
+          "invocation.acceptanceReceiptDigest",
+          "invocation.settlementReceiptDigest",
+          "paymentIntent.settlementReceiptDigest",
+          "paymentIntent.unknownObservationProofDigest",
+          "receiptBase.claimsDigest"
+        ]
+      },
+      {
+        "profile": "DELIVERY_ACKNOWLEDGEMENT",
+        "paths": ["invocation.acknowledgementDigest"]
+      },
+      {
+        "profile": "ARTIFACT_MANIFEST",
+        "paths": [
+          "acceptanceReceipt.artifactManifestDigest",
+          "deliveryAcknowledgement.artifactManifestDigest",
+          "deliveryReceipt.artifactManifestDigest",
+          "executionReceipt.artifactManifestDigest",
+          "outputStagingReceipt.artifactManifestDigest"
+        ]
+      },
+      {
+        "profile": "PROOF_BUNDLE_MANIFEST",
+        "paths": ["proofBundle.manifestDigest"]
+      },
+      {
+        "profile": "PAYMENT_TERMS",
+        "paths": ["openAntX402Extension.paymentTermsDigest"]
+      },
+      {
+        "profile": "PAYMENT_INTENT_FINGERPRINT",
+        "paths": [
+          "mandateAuthorizationProof.paymentIntentFingerprintDigest",
+          "walletAuthorizationProof.paymentIntentFingerprintDigest",
+          "fundingUnknownObservation.paymentIntentFingerprintDigest",
+          "paymentIntent.fingerprintDigest",
+          "settlementReceipt.paymentIntentFingerprintDigest"
+        ]
+      },
+      {
+        "profile": "PAYMENT_AUTHORIZATION",
+        "paths": [
+          "fundingUnknownObservation.authorizationDigest",
+          "mandateAuthorizationProof.paymentAuthorizationDigest",
+          "paymentIntent.authorizationDigest",
+          "settlementReceipt.paymentAuthorizationDigest",
+          "walletAuthorizationProof.paymentAuthorizationDigest"
+        ]
+      },
+      {
+        "profile": "REQUEST_BYTES",
+        "paths": [
+          "commerceReceipt.requestDigest",
+          "executionReceipt.requestDigest",
+          "invocation.requestDigest",
+          "openAntX402Extension.requestDigest",
+          "outputStagingReceipt.requestDigest"
+        ]
+      },
+      {
+        "profile": "RESPONSE_BYTES",
+        "paths": [
+          "acceptanceReceipt.responseDigest",
+          "deliveryReceipt.responseDigest",
+          "executionReceipt.responseDigest",
+          "outputStagingReceipt.responseDigest"
+        ]
+      },
+      {
+        "profile": "ARTIFACT_BYTES",
+        "paths": ["artifactManifest.contentDigest"]
+      },
+      {
+        "profile": "TRANSACTION_REFERENCE",
+        "paths": ["settlementReceipt.transactionDigest"]
+      },
+      {
+        "profile": "SELLER_IDENTITY_CREDENTIAL",
+        "paths": ["sellerIdentityCredential.claimsDigest"]
+      },
+      {
+        "paths": ["proofReference.objectDigest"],
+        "selector": "ProofReference.objectType",
+        "cases": {
+          "MandateAuthorizationProof": "RECEIPT_CLAIMS",
+          "WalletAuthorizationProof": "RECEIPT_CLAIMS",
+          "SettlementReceipt": "RECEIPT_CLAIMS",
+          "CommerceReceipt": "RECEIPT_CLAIMS",
+          "OutputStagingReceipt": "RECEIPT_CLAIMS",
+          "ExecutionReceipt": "RECEIPT_CLAIMS",
+          "DeliveryReceipt": "RECEIPT_CLAIMS",
+          "AcceptanceReceipt": "RECEIPT_CLAIMS",
+          "FundingUnknownObservation": "RECEIPT_CLAIMS",
+          "ListingMandate": "LISTING_MANDATE",
+          "SellerIdentityCredential": "SELLER_IDENTITY_CREDENTIAL"
+        }
+      },
+      {
+        "paths": ["signatureEnvelope.signedObjectDigest"],
+        "selector": "enclosing objectType (WalletAuthorizationProof is schema-fixed to EIP712)",
+        "cases": {
+          "ListingMandate": "LISTING_MANDATE",
+          "TaskAgreementVersion": "TASK_AGREEMENT_VERSION",
+          "RuntimeCapability": "RUNTIME_CAPABILITY",
+          "SellerIdentityCredential": "SELLER_IDENTITY_CREDENTIAL",
+          "OpenAntX402Extension": "OPENANT_X402_EXTENSION",
+          "MandateAuthorizationProof": "RECEIPT_CLAIMS",
+          "WalletAuthorizationProof": "PAYMENT_AUTHORIZATION",
+          "SettlementReceipt": "RECEIPT_CLAIMS",
+          "CommerceReceipt": "RECEIPT_CLAIMS",
+          "OutputStagingReceipt": "RECEIPT_CLAIMS",
+          "ExecutionReceipt": "RECEIPT_CLAIMS",
+          "DeliveryReceipt": "RECEIPT_CLAIMS",
+          "AcceptanceReceipt": "RECEIPT_CLAIMS",
+          "FundingUnknownObservation": "RECEIPT_CLAIMS",
+          "DeliveryAcknowledgement": "DELIVERY_ACKNOWLEDGEMENT"
+        }
+      },
+      {
+        "paths": ["deliveryAcknowledgement.receivedContentDigest"],
+        "selector": "DeliveryAcknowledgement.contentKind",
+        "cases": {"RESPONSE": "RESPONSE_BYTES", "ARTIFACT": "ARTIFACT_BYTES"}
+      }
+    ]
+  },
+  "digest": {
+    "algorithm": "sha256",
+    "canonicalization": "recursive UTF-16 code-unit key sort; JSON primitives; arrays preserve order",
+    "files": [
+      "spec/commerce.json",
+      "schemas/commerce-0.1.schema.json"
+    ],
+    "framing": "utf8(path + LF + canonical-json + LF) in listed order",
+    "expectedFile": "schemas/tests/expected-digest.txt"
+  }
+}

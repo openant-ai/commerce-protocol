@@ -1,0 +1,213 @@
+{
+  "cases": [
+    {
+      "definition": "serviceDefinitionVersion",
+      "value": {
+        "objectType": "ServiceDefinitionVersion",
+        "protocolVersion": "0.1",
+        "serviceDefinitionId": "service_weather",
+        "version": 1,
+        "operationId": "operation_weather_current",
+        "category": "READ_ONLY_DATA",
+        "inputMediaType": "application/json",
+        "outputMediaType": "application/json",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["city"],
+          "properties": {
+            "city": {"type": "string", "maxLength": 128}
+          }
+        },
+        "outputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["temperatureCelsius"],
+          "properties": {
+            "temperatureCelsius": {"type": "number"}
+          }
+        },
+        "chargeableSuccess": {
+          "meter": "SUCCESSFUL_UNARY_CALL",
+          "httpStatuses": [200],
+          "schemaMustMatch": true,
+          "emptyResultAllowed": false
+        },
+        "limits": {
+          "requestBytes": 65536,
+          "responseBytes": 1048576,
+          "artifactBytes": 104857600,
+          "sellerExecutionSeconds": 30,
+          "invocationSeconds": 90
+        },
+        "versionDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    },
+    {
+      "definition": "offerVersion",
+      "value": {
+        "objectType": "OfferVersion",
+        "protocolVersion": "0.1",
+        "offerId": "offer_weather",
+        "version": 1,
+        "pricingModel": "FIXED_PER_SUCCESSFUL_UNARY_CALL",
+        "amountAtomic": "100000",
+        "asset": {
+          "network": "eip155:8453",
+          "namespace": "erc20",
+          "reference": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          "symbol": "USDC",
+          "decimals": 6
+        },
+        "payoutAddress": "0x1111111111111111111111111111111111111111",
+        "refundPolicy": "SELLER_AUTHORIZED_NEW_TRANSACTION",
+        "deliveryTerms": {
+          "unacknowledgedRecoverySeconds": 86400,
+          "acknowledgedDeletionGraceSeconds": 900
+        },
+        "minimumAssurance": {
+          "authorization": "MANDATE_PROTECTED",
+          "settlement": "FINALITY_VERIFIED",
+          "delivery": "HOSTED_RECOVERABLE",
+          "contentCustody": "HOSTED_ENCRYPTED_BUFFER",
+          "identity": "VERIFIED_SELLER"
+        },
+        "versionDigest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    {
+      "definition": "endpointDescriptorVersion",
+      "value": {
+        "objectType": "EndpointDescriptorVersion",
+        "protocolVersion": "0.1",
+        "endpointDescriptorId": "endpoint_weather",
+        "version": 1,
+        "mode": "HOSTED",
+        "invokeUri": "https://commerce.openant.ai/v1/invoke/weather",
+        "challengeIssuer": {
+          "issuer": "openant_gateway",
+          "keyId": "key_challenge_1"
+        },
+        "executionIssuerKeys": [
+          {
+            "issuer": "seller_acme",
+            "keyId": "key_execution_1"
+          }
+        ],
+        "stagingIssuerKeys": [
+          {
+            "issuer": "openant_gateway",
+            "keyId": "key_delivery_1"
+          }
+        ],
+        "deliveryIssuerKeys": [
+          {
+            "issuer": "openant_gateway",
+            "keyId": "key_delivery_1"
+          }
+        ],
+        "commerceIssuerKeys": [
+          {
+            "issuer": "openant_core",
+            "keyId": "key_commerce_1"
+          }
+        ],
+        "versionDigest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+      }
+    },
+    {
+      "definition": "serviceSkuVersion",
+      "value": {
+        "objectType": "ServiceSKUVersion",
+        "protocolVersion": "0.1",
+        "serviceSkuId": "sku_weather",
+        "version": 1,
+        "operationId": "operation_weather_current",
+        "sellerIdentityRef": "seller_acme",
+        "serviceDefinitionVersionDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "offerVersionDigest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "endpointDescriptorVersionDigest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "skuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+      }
+    },
+    {
+      "definition": "listingMandate",
+      "value": {
+        "objectType": "ListingMandate",
+        "protocolVersion": "0.1",
+        "listingMandateId": "listing_mandate_weather",
+        "version": 1,
+        "sellerIdentityRef": "seller_acme",
+        "serviceSkuId": "sku_weather",
+        "skuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "authorizedChallengeIssuers": [
+          {
+            "issuer": "openant_gateway",
+            "keyId": "key_challenge_1"
+          }
+        ],
+        "validFrom": "2026-08-10T00:00:00Z",
+        "validUntil": "2030-08-10T00:00:00Z",
+        "signature": {
+          "scheme": "DETACHED_JWS_EDDSA",
+          "issuer": "seller_acme",
+          "keyId": "key_listing_1",
+          "signedObjectDigest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+          "signature": "eyJhbGciOiJFZERTQSJ9..listing_signature_1"
+        }
+      }
+    },
+    {
+      "definition": "taskAgreementVersion",
+      "value": {
+        "objectType": "TaskAgreementVersion",
+        "protocolVersion": "0.1",
+        "taskAgreementId": "task_agreement_1",
+        "version": 1,
+        "buyerActorRef": "agent_buyer_1",
+        "sellerIdentityRef": "seller_acme",
+        "serviceSkuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "agreementTerms": {"escrowRef": "escrow_contract_1"},
+        "validFrom": "2026-08-10T00:00:00Z",
+        "validUntil": "2026-08-11T00:00:00Z",
+        "issuer": {"issuer": "buyer_seller_agreement", "keyId": "key_agreement_1"},
+        "taskAgreementVersionDigest": "sha256:1313131313131313131313131313131313131313131313131313131313131313",
+        "signature": {"scheme": "DETACHED_JWS_EDDSA", "issuer": "buyer_seller_agreement", "keyId": "key_agreement_1", "signedObjectDigest": "sha256:1313131313131313131313131313131313131313131313131313131313131313", "signature": "task_agreement_signature_1"}
+      }
+    },
+    {
+      "definition": "runtimeCapability",
+      "value": {
+        "objectType": "RuntimeCapability",
+        "protocolVersion": "0.1",
+        "runtimeCapabilityId": "runtime_capability_1",
+        "runtimeId": "runtime_cli_1",
+        "agentId": "agent_buyer_1",
+        "buyerActorRef": "agent_buyer_1",
+        "mandateId": "mandate_payment_1",
+        "mandateVersion": 3,
+        "serviceSkuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "issuedAt": "2026-08-10T00:00:00Z",
+        "expiresAt": "2026-08-10T00:05:00Z",
+        "issuer": {"issuer": "zero_x_key", "keyId": "key_authorization_1"},
+        "runtimeCapabilityDigest": "sha256:1212121212121212121212121212121212121212121212121212121212121212",
+        "signature": {"scheme": "APP_PROOF_COMMERCE_V1", "issuer": "zero_x_key", "keyId": "key_authorization_1", "signedObjectDigest": "sha256:1212121212121212121212121212121212121212121212121212121212121212", "signature": "runtime_capability_signature_1"}
+      }
+    },
+    {
+      "definition": "sellerIdentityCredential",
+      "value": {
+        "objectType": "SellerIdentityCredential",
+        "protocolVersion": "0.1",
+        "credentialId": "seller_credential_1",
+        "sellerIdentityRef": "seller_acme",
+        "verificationLevel": "VERIFIED_SELLER",
+        "issuedAt": "2026-08-10T00:00:00Z",
+        "expiresAt": "2030-08-10T00:00:00Z",
+        "issuer": {"issuer": "openant_identity", "keyId": "key_identity_1"},
+        "claimsDigest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "signature": {"scheme": "DETACHED_JWS_EDDSA", "issuer": "openant_identity", "keyId": "key_identity_1", "signedObjectDigest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "signature": "seller_identity_signature_1"}
+      }
+    }
+  ]
+}

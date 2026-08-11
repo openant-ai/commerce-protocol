@@ -1,0 +1,12 @@
+{
+  "definition": "artifactManifest",
+  "expectedCode": "SCHEMA_INVALID",
+  "value": {
+    "objectType": "ArtifactManifest",
+    "protocolVersion": "0.1",
+    "artifactId": "artifact_weather_1",
+    "mediaType": "application/octet-stream",
+    "bytes": 104857601,
+    "contentDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  }
+}

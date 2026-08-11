@@ -1,0 +1,17 @@
+{
+  "name": "@openant/commerce-codegen",
+  "version": "0.1.0-draft.4",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "typescript": "5.9.2"
+  },
+  "scripts": {
+    "generate": "node src/cli.mjs generate",
+    "check": "node src/cli.mjs check",
+    "test": "node --test test/*.test.mjs && node src/cli.mjs check"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "openant-commerce-protocol-workspace",
+  "version": "0.1.0-draft.4",
+  "private": true,
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "npm run test:schema && npm run test:protocol && npm run test:reference && npm run test:codegen",
+    "test:schema": "node --test schemas/tests/*.test.cjs",
+    "test:protocol": "npm --prefix packages/protocol test",
+    "test:reference": "node --test reference/*.test.mjs vectors/*.test.mjs tools/conformance/*.test.mjs",
+    "test:codegen": "npm --prefix codegen test",
+    "build:protocol": "npm --prefix packages/protocol run build"
+  },
+  "devDependencies": {
+    "ajv": "8.20.0"
+  }
+}

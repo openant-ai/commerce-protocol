@@ -1,0 +1,7 @@
+{
+  "safe": {
+    "__proto__": {
+      "externalStateMachineRef": "ATTACKER_MACHINE"
+    }
+  }
+}

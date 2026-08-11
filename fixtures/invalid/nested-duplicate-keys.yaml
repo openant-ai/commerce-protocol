@@ -1,0 +1,4 @@
+operations:
+  - kind: INVOCATION
+    required: first
+    required: second

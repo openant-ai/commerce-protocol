@@ -1,0 +1,74 @@
+{
+  "cases": [
+    {
+      "kind": "expiredChallenge",
+      "expectedCode": "CHALLENGE_EXPIRED",
+      "now": "2026-08-10T00:05:01Z",
+      "extension": {
+        "issuedAt": "2026-08-10T00:00:00Z",
+        "expiresAt": "2026-08-10T00:05:00Z"
+      }
+    },
+    {
+      "kind": "fingerprintConflict",
+      "expectedCode": "IDEMPOTENCY_FINGERPRINT_CONFLICT",
+      "existing": {
+        "idempotencyKey": "payment-intent-weather-0001",
+        "fingerprintDigest": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+      },
+      "incoming": {
+        "idempotencyKey": "payment-intent-weather-0001",
+        "fingerprintDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "kind": "illegalTransition",
+      "expectedCode": "ILLEGAL_STATE_TRANSITION",
+      "machine": "invocation",
+      "from": "EXECUTING",
+      "to": "DELIVERABLE"
+    },
+    {
+      "kind": "x402TermsMismatch",
+      "expectedCode": "CHALLENGE_INVALID",
+      "acceptance": {
+        "amount": "100000",
+        "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        "payTo": "0x1111111111111111111111111111111111111111"
+      },
+      "extension": {
+        "amountAtomic": "200000",
+        "asset": {
+          "reference": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
+        },
+        "payoutAddress": "0x1111111111111111111111111111111111111111"
+      }
+    },
+    {
+      "kind": "proofIncomplete",
+      "expectedCode": "PROOF_INCOMPLETE",
+      "assurance": {
+        "authorization": "MANDATE_PROTECTED",
+        "settlement": "FINALITY_VERIFIED",
+        "delivery": "HOSTED_RECOVERABLE",
+        "contentCustody": "HOSTED_ENCRYPTED_BUFFER",
+        "identity": "VERIFIED_SELLER"
+      },
+      "proofTypes": [
+        "MandateAuthorizationProof",
+        "SettlementReceipt",
+        "DeliveryReceipt"
+      ]
+    },
+    {
+      "kind": "listingSellerIssuerMismatch",
+      "expectedCode": "CHALLENGE_INVALID",
+      "listingMandate": {
+        "sellerIdentityRef": "seller_acme",
+        "signature": {
+          "issuer": "seller_attacker"
+        }
+      }
+    }
+  ]
+}

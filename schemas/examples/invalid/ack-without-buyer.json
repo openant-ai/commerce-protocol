@@ -1,0 +1,21 @@
+{
+  "definition": "deliveryAcknowledgement",
+  "expectedCode": "SCHEMA_INVALID",
+  "value": {
+    "objectType": "DeliveryAcknowledgement",
+    "protocolVersion": "0.1",
+    "acknowledgementId": "acknowledgement_1",
+    "invocationId": "invocation_weather_1",
+    "deliveryReceiptDigest": "sha256:8080808080808080808080808080808080808080808080808080808080808080",
+    "contentKind": "RESPONSE",
+    "receivedContentDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "receivedAt": "2026-08-10T00:10:00Z",
+    "attestation": {
+      "scheme": "DETACHED_JWS_EDDSA",
+      "issuer": "buyer_actor_1",
+      "keyId": "key_acceptance_1",
+      "signedObjectDigest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "signature": "eyJhbGciOiJFZERTQSJ9..acceptance_signature_1"
+    }
+  }
+}

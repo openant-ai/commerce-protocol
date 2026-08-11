@@ -1,0 +1,8 @@
+literalAnchor: "&seller"
+literalAlias: '*buyer'
+literalMerge: "<<:"
+literalUnicodeAnchor: "&é"
+literalUnicodeAlias: '*é'
+literalNonFiniteNumber: "1e999"
+nested:
+  note: "quoted # text is not a comment"

@@ -1,0 +1,16 @@
+{
+  "operations": {
+    "INVOCATION": {
+      "summary": "Invoke one immutable Service SKU.",
+      "description": "The adapter carries the canonical CommerceOperation envelope."
+    },
+    "TASK": {
+      "summary": "Reference one immutable task agreement."
+    }
+  },
+  "objects": {
+    "ServiceSKUVersion": {
+      "description": "An immutable root over definition, offer, and endpoint versions."
+    }
+  }
+}

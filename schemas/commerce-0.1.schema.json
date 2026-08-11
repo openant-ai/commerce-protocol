@@ -1,0 +1,1500 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://protocol.openant.ai/commerce/0.1/schema.json",
+  "title": "OpenAnt Commerce Protocol 0.1",
+  "description": "Transport-neutral contract for OpenAnt OnChain Agent Commerce.",
+  "oneOf": [
+    {"$ref": "#/$defs/commerceOperation"},
+    {"$ref": "#/$defs/serviceDefinitionVersion"},
+    {"$ref": "#/$defs/offerVersion"},
+    {"$ref": "#/$defs/endpointDescriptorVersion"},
+    {"$ref": "#/$defs/serviceSkuVersion"},
+    {"$ref": "#/$defs/taskAgreementVersion"},
+    {"$ref": "#/$defs/runtimeCapability"},
+    {"$ref": "#/$defs/listingMandate"},
+    {"$ref": "#/$defs/sellerIdentityCredential"},
+    {"$ref": "#/$defs/invocation"},
+    {"$ref": "#/$defs/paymentIntent"},
+    {"$ref": "#/$defs/paymentRequiredOutcome"},
+    {"$ref": "#/$defs/openAntX402Extension"},
+    {"$ref": "#/$defs/artifactManifest"},
+    {"$ref": "#/$defs/receiptEnvelope"},
+    {"$ref": "#/$defs/deliveryAcknowledgement"},
+    {"$ref": "#/$defs/proofBundle"},
+    {"$ref": "#/$defs/protocolError"}
+  ],
+  "$defs": {
+    "wireVersion": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "identifier": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 128,
+      "pattern": "^[a-z][a-z0-9]*(?:[_:-][a-zA-Z0-9]+)+$"
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._~-]+$"
+    },
+    "sha256Digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "rfc3339Utc": {
+      "type": "string",
+      "format": "rfc3339-utc-whole-seconds"
+    },
+    "uint256Decimal": {
+      "type": "string",
+      "format": "uint256-decimal"
+    },
+    "positiveUint256Decimal": {
+      "type": "string",
+      "format": "uint256-decimal",
+      "not": {"const": "0"}
+    },
+    "evmAddress": {
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$"
+    },
+    "nonZeroEvmAddress": {
+      "allOf": [
+        {"$ref": "#/$defs/evmAddress"},
+        {"not": {"pattern": "^0x0{40}$"}}
+      ]
+    },
+    "httpsUri": {
+      "type": "string",
+      "maxLength": 2048,
+      "pattern": "^https://[^\\s]+$"
+    },
+    "baseUsdcAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["network", "namespace", "reference", "symbol", "decimals"],
+      "properties": {
+        "network": {"const": "eip155:8453"},
+        "namespace": {"const": "erc20"},
+        "reference": {"const": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"},
+        "symbol": {"const": "USDC"},
+        "decimals": {"const": 6}
+      }
+    },
+    "issuerKeyRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["issuer", "keyId"],
+      "properties": {
+        "issuer": {"$ref": "#/$defs/identifier"},
+        "keyId": {"$ref": "#/$defs/identifier"}
+      }
+    },
+    "signatureEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scheme", "issuer", "keyId", "signedObjectDigest", "signature"],
+      "properties": {
+        "scheme": {
+          "enum": ["DETACHED_JWS_ES256", "DETACHED_JWS_EDDSA", "EIP712", "APP_PROOF_COMMERCE_V1"]
+        },
+        "issuer": {"$ref": "#/$defs/identifier"},
+        "keyId": {"$ref": "#/$defs/identifier"},
+        "signedObjectDigest": {"$ref": "#/$defs/sha256Digest"},
+        "signature": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 8192,
+          "pattern": "^[A-Za-z0-9._~-]+$"
+        }
+      }
+    },
+    "jsonSchemaDocument": {
+      "type": "object"
+    },
+    "contentLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requestBytes",
+        "responseBytes",
+        "artifactBytes",
+        "sellerExecutionSeconds",
+        "invocationSeconds"
+      ],
+      "properties": {
+        "requestBytes": {"type": "integer", "minimum": 1, "maximum": 262144},
+        "responseBytes": {"type": "integer", "minimum": 1, "maximum": 10485760},
+        "artifactBytes": {"type": "integer", "minimum": 1, "maximum": 104857600},
+        "sellerExecutionSeconds": {"type": "integer", "minimum": 1, "maximum": 60},
+        "invocationSeconds": {"type": "integer", "minimum": 1, "maximum": 90}
+      }
+    },
+    "assuranceVector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authorization", "settlement", "delivery", "contentCustody", "identity"],
+      "properties": {
+        "authorization": {
+          "enum": ["NONE", "WALLET_SIGNED", "MANDATE_PROTECTED"]
+        },
+        "settlement": {
+          "enum": ["NONE", "SUBMITTED_ONLY", "FINALITY_VERIFIED"]
+        },
+        "delivery": {
+          "enum": ["NONE", "SELLER_ASSERTED", "DIRECT_BUYER_ACCEPTED", "HOSTED_RECOVERABLE"]
+        },
+        "contentCustody": {
+          "enum": ["DIRECT", "HOSTED_EPHEMERAL", "HOSTED_ENCRYPTED_BUFFER"]
+        },
+        "identity": {
+          "enum": ["ANONYMOUS_WALLET", "PLATFORM_BOUND", "VERIFIED_SELLER"]
+        }
+      }
+    },
+    "serviceDefinitionVersion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objectType",
+        "protocolVersion",
+        "serviceDefinitionId",
+        "version",
+        "operationId",
+        "category",
+        "inputMediaType",
+        "outputMediaType",
+        "inputSchema",
+        "outputSchema",
+        "chargeableSuccess",
+        "limits",
+        "versionDigest"
+      ],
+      "properties": {
+        "objectType": {"const": "ServiceDefinitionVersion"},
+        "protocolVersion": {"$ref": "#/$defs/wireVersion"},
+        "serviceDefinitionId": {"$ref": "#/$defs/identifier"},
+        "version": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+        "operationId": {"$ref": "#/$defs/identifier"},
+        "category": {
+          "enum": ["READ_ONLY_DATA", "BOUNDED_COMPUTE", "HASHABLE_DIGITAL_ARTIFACT"]
+        },
+        "inputMediaType": {"const": "application/json"},
+        "outputMediaType": {"type": "string", "enum": ["application/json", "application/octet-stream"]},
+        "inputSchema": {"$ref": "#/$defs/jsonSchemaDocument"},
+        "outputSchema": {"$ref": "#/$defs/jsonSchemaDocument"},
+        "chargeableSuccess": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["meter", "httpStatuses", "schemaMustMatch", "emptyResultAllowed"],
+          "properties": {
+            "meter": {"const": "SUCCESSFUL_UNARY_CALL"},
+            "httpStatuses": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 16,
+              "uniqueItems": true,
+              "items": {"type": "integer", "minimum": 200, "maximum": 299}
+            },
+            "schemaMustMatch": {"const": true},
+            "emptyResultAllowed": {"type": "boolean"}
+          }
+        },
+        "limits": {"$ref": "#/$defs/contentLimits"},
+        "versionDigest": {"$ref": "#/$defs/sha256Digest"}
+      }
+    },
+    "offerVersion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objectType",
+        "protocolVersion",
+        "offerId",
+        "version",
+        "pricingModel",
+        "amountAtomic",
+        "asset",
+        "payoutAddress",
+        "refundPolicy",
+        "deliveryTerms",
+        "minimumAssurance",
+        "versionDigest"
+      ],
+      "properties": {
+        "objectType": {"const": "OfferVersion"},
+        "protocolVersion": {"$ref": "#/$defs/wireVersion"},
+        "offerId": {"$ref": "#/$defs/identifier"},
+        "version": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+        "pricingModel": {"const": "FIXED_PER_SUCCESSFUL_UNARY_CALL"},
+        "amountAtomic": {"$ref": "#/$defs/positiveUint256Decimal"},
+        "asset": {"$ref": "#/$defs/baseUsdcAsset"},
+        "payoutAddress": {"$ref": "#/$defs/nonZeroEvmAddress"},
+        "refundPolicy": {"const": "SELLER_AUTHORIZED_NEW_TRANSACTION"},
+        "deliveryTerms": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["unacknowledgedRecoverySeconds", "acknowledgedDeletionGraceSeconds"],
+          "properties": {
+            "unacknowledgedRecoverySeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 259200
+            },
+            "acknowledgedDeletionGraceSeconds": {"const": 900}
+          }
+        },
+        "minimumAssurance": {"$ref": "#/$defs/assuranceVector"},
+        "versionDigest": {"$ref": "#/$defs/sha256Digest"}
+      }
+    },
+    "endpointDescriptorVersion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objectType",
+        "protocolVersion",
+        "endpointDescriptorId",
+        "version",
+        "mode",
+        "invokeUri",
+        "challengeIssuer",
+        "executionIssuerKeys",
+        "commerceIssuerKeys",
+        "versionDigest"
+      ],
+      "properties": {
+        "objectType": {"const": "EndpointDescriptorVersion"},
+        "protocolVersion": {"$ref": "#/$defs/wireVersion"},
+        "endpointDescriptorId": {"$ref": "#/$defs/identifier"},
+        "version": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+        "mode": {"enum": ["HOSTED", "DIRECT"]},
+        "invokeUri": {"$ref": "#/$defs/httpsUri"},
+        "challengeIssuer": {"$ref": "#/$defs/issuerKeyRef"},
+        "executionIssuerKeys": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {"$ref": "#/$defs/issuerKeyRef"}
+        },
+        "stagingIssuerKeys": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {"$ref": "#/$defs/issuerKeyRef"}
+        },
+        "deliveryIssuerKeys": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {"$ref": "#/$defs/issuerKeyRef"}
+        },
+        "commerceIssuerKeys": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {"$ref": "#/$defs/issuerKeyRef"}
+        },
+        "versionDigest": {"$ref": "#/$defs/sha256Digest"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"mode": {"const": "HOSTED"}}},
+          "then": {"required": ["stagingIssuerKeys", "deliveryIssuerKeys"]},
+          "else": {
+            "not": {
+              "anyOf": [
+                {"required": ["stagingIssuerKeys"]},
+                {"required": ["deliveryIssuerKeys"]}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "serviceSkuVersion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objectType",
+        "protocolVersion",
+        "serviceSkuId",
+        "version",
+        "operationId",
+        "sellerIdentityRef",
+        "serviceDefinitionVersionDigest",
+        "offerVersionDigest",
+        "endpointDescriptorVersionDigest",
+        "skuVersionDigest"
+      ],
+      "properties": {
+        "objectType": {"const": "ServiceSKUVersion"},
+        "protocolVersion": {"$ref": "#/$defs/wireVersion"},
+        "serviceSkuId": {"$ref": "#/$defs/identifier"},
+        "version": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+        "operationId": {"$ref": "#/$defs/identifier"},
+        "sellerIdentityRef": {"$ref": "#/$defs/identifier"},
+        "serviceDefinitionVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+        "offerVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+        "endpointDescriptorVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+        "skuVersionDigest": {"$ref": "#/$defs/sha256Digest"}
+      }
+    },
+    "taskAgreementVersion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["objectType", "protocolVersion", "taskAgreementId", "version", "buyerActorRef", "sellerIdentityRef", "serviceSkuVersionDigest", "agreementTerms", "validFrom", "validUntil", "issuer", "taskAgreementVersionDigest", "signature"],
+      "properties": {
+        "objectType": {"const": "TaskAgreementVersion"},
+        "protocolVersion": {"$ref": "#/$defs/wireVersion"},
+        "taskAgreementId": {"$ref": "#/$defs/identifier"},
+        "version": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+        "buyerActorRef": {"$ref": "#/$defs/identifier"},
+        "sellerIdentityRef": {"$ref": "#/$defs/identifier"},
+        "serviceSkuVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+        "agreementTerms": {"type": "object"},
+        "validFrom": {"$ref": "#/$defs/rfc3339Utc"},
+        "validUntil": {"$ref": "#/$defs/rfc3339Utc"},
+        "issuer": {"$ref": "#/$defs/issuerKeyRef"},
+        "taskAgreementVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+        "signature": {"$ref": "#/$defs/signatureEnvelope"}
+      }
+    },
+    "runtimeCapability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["objectType", "protocolVersion", "runtimeCapabilityId", "runtimeId", "agentId", "buyerActorRef", "mandateId", "mandateVersion", "serviceSkuVersionDigest", "issuedAt", "expiresAt", "issuer", "runtimeCapabilityDigest", "signature"],
+      "properties": {
+        "objectType": {"const": "RuntimeCapability"},
+        "protocolVersion": {"$ref": "#/$defs/wireVersion"},
+        "runtimeCapabilityId": {"$ref": "#/$defs/identifier"},
+        "runtimeId": {"$ref": "#/$defs/identifier"},
+        "agentId": {"$ref": "#/$defs/identifier"},
+        "buyerActorRef": {"$ref": "#/$defs/identifier"},
+        "mandateId": {"$ref": "#/$defs/identifier"},
+        "mandateVersion": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+        "serviceSkuVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+        "issuedAt": {"$ref": "#/$defs/rfc3339Utc"},
+        "expiresAt": {"$ref": "#/$defs/rfc3339Utc"},
+        "issuer": {"$ref": "#/$defs/issuerKeyRef"},
+        "runtimeCapabilityDigest": {"$ref": "#/$defs/sha256Digest"},
+        "signature": {"$ref": "#/$defs/signatureEnvelope"}
+      }
+    },
+    "listingMandate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objectType",
+        "protocolVersion",
+        "listingMandateId",
+        "version",
+        "sellerIdentityRef",
+        "serviceSkuId",
+        "skuVersionDigest",
+        "authorizedChallengeIssuers",
+        "validFrom",
+        "validUntil",
+        "signature"
+      ],
+      "properties": {
+        "objectType": {"const": "ListingMandate"},
+        "protocolVersion": {"$ref": "#/$defs/wireVersion"},
+        "listingMandateId": {"$ref": "#/$defs/identifier"},
+        "version": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+        "sellerIdentityRef": {"$ref": "#/$defs/identifier"},
+        "serviceSkuId": {"$ref": "#/$defs/identifier"},
+        "skuVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+        "authorizedChallengeIssuers": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {"$ref": "#/$defs/issuerKeyRef"}
+        },
+        "validFrom": {"$ref": "#/$defs/rfc3339Utc"},
+        "validUntil": {"$ref": "#/$defs/rfc3339Utc"},
+        "signature": {"$ref": "#/$defs/signatureEnvelope"}
+      }
+    },
+    "sellerIdentityCredential": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["objectType", "protocolVersion", "credentialId", "sellerIdentityRef", "verificationLevel", "issuedAt", "expiresAt", "issuer", "claimsDigest", "signature"],
+      "properties": {
+        "objectType": {"const": "SellerIdentityCredential"},
+        "protocolVersion": {"$ref": "#/$defs/wireVersion"},
+        "credentialId": {"$ref": "#/$defs/identifier"},
+        "sellerIdentityRef": {"$ref": "#/$defs/identifier"},
+        "verificationLevel": {"const": "VERIFIED_SELLER"},
+        "issuedAt": {"$ref": "#/$defs/rfc3339Utc"},
+        "expiresAt": {"$ref": "#/$defs/rfc3339Utc"},
+        "issuer": {"$ref": "#/$defs/issuerKeyRef"},
+        "claimsDigest": {"$ref": "#/$defs/sha256Digest"},
+        "signature": {"$ref": "#/$defs/signatureEnvelope"}
+      }
+    },
+    "commerceOperation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["objectType", "protocolVersion", "operationId", "kind", "serviceSkuVersionDigest", "invocationId"],
+          "properties": {
+            "objectType": {"const": "CommerceOperation"},
+            "protocolVersion": {"$ref": "#/$defs/wireVersion"},
+            "operationId": {"$ref": "#/$defs/identifier"},
+            "kind": {"const": "INVOCATION"},
+            "serviceSkuVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+            "invocationId": {"$ref": "#/$defs/identifier"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["objectType", "protocolVersion", "operationId", "kind", "taskAgreementVersionDigest", "escrowRef"],
+          "properties": {
+            "objectType": {"const": "CommerceOperation"},
+            "protocolVersion": {"$ref": "#/$defs/wireVersion"},
+            "operationId": {"$ref": "#/$defs/identifier"},
+            "kind": {"const": "TASK"},
+            "taskAgreementVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+            "escrowRef": {"$ref": "#/$defs/identifier"}
+          }
+        }
+      ]
+    },
+    "invocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objectType",
+        "protocolVersion",
+        "invocationId",
+        "operationId",
+        "serviceSkuId",
+        "skuVersionDigest",
+        "buyerActorRef",
+        "mode",
+        "state",
+        "requestDigest",
+        "idempotencyKey",
+        "createdAt",
+        "deadline"
+      ],
+      "properties": {
+        "objectType": {"const": "Invocation"},
+        "protocolVersion": {"$ref": "#/$defs/wireVersion"},
+        "invocationId": {"$ref": "#/$defs/identifier"},
+        "operationId": {"$ref": "#/$defs/identifier"},
+        "serviceSkuId": {"$ref": "#/$defs/identifier"},
+        "skuVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+        "buyerActorRef": {"$ref": "#/$defs/identifier"},
+        "mode": {"enum": ["HOSTED", "DIRECT"]},
+        "state": {
+          "enum": [
+            "CREATED",
+            "PAYMENT_REQUIRED",
+            "PAYMENT_AUTHORIZED",
+            "EXECUTING",
+            "OUTPUT_STAGED",
+            "SETTLEMENT_PENDING",
+            "PAYMENT_UNKNOWN",
+            "DELIVERABLE",
+            "DELIVERED",
+            "ACKED",
+            "FAILED_BEFORE_SETTLEMENT",
+            "EXPIRED",
+            "RECOVERY_WINDOW_EXPIRED"
+          ]
+        },
+        "requestDigest": {"$ref": "#/$defs/sha256Digest"},
+        "idempotencyKey": {"$ref": "#/$defs/idempotencyKey"},
+        "createdAt": {"$ref": "#/$defs/rfc3339Utc"},
+        "deadline": {"$ref": "#/$defs/rfc3339Utc"},
+        "paymentIntentRef": {"$ref": "#/$defs/identifier"},
+        "paymentProofDigest": {"$ref": "#/$defs/sha256Digest"},
+        "executionReceiptDigest": {"$ref": "#/$defs/sha256Digest"},
+        "outputStagingReceiptDigest": {"$ref": "#/$defs/sha256Digest"},
+        "settlementReceiptDigest": {"$ref": "#/$defs/sha256Digest"},
+        "deliveryReceiptDigest": {"$ref": "#/$defs/sha256Digest"},
+        "acknowledgementDigest": {"$ref": "#/$defs/sha256Digest"},
+        "acceptanceReceiptDigest": {"$ref": "#/$defs/sha256Digest"},
+        "paymentUnknownObservationProofDigest": {"$ref": "#/$defs/sha256Digest"},
+        "reconciliationDeadline": {"$ref": "#/$defs/rfc3339Utc"},
+        "lastErrorCode": {"$ref": "#/$defs/errorCode"}
+      },
+      "dependentRequired": {
+        "paymentProofDigest": ["paymentIntentRef"]
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"state": {"enum": ["PAYMENT_AUTHORIZED", "EXECUTING", "OUTPUT_STAGED", "SETTLEMENT_PENDING", "PAYMENT_UNKNOWN", "DELIVERABLE", "DELIVERED", "ACKED", "RECOVERY_WINDOW_EXPIRED"]}}},
+          "then": {"required": ["paymentIntentRef", "paymentProofDigest"]}
+        },
+        {
+          "if": {"properties": {"mode": {"const": "HOSTED"}, "state": {"enum": ["OUTPUT_STAGED", "SETTLEMENT_PENDING", "PAYMENT_UNKNOWN", "DELIVERABLE", "DELIVERED", "ACKED", "RECOVERY_WINDOW_EXPIRED"]}}, "required": ["mode", "state"]},
+          "then": {"required": ["outputStagingReceiptDigest"]}
+        },
+        {
+          "if": {"properties": {"state": {"enum": ["DELIVERABLE", "DELIVERED", "ACKED", "RECOVERY_WINDOW_EXPIRED"]}}},
+          "then": {"required": ["settlementReceiptDigest"]}
+        },
+        {
+          "if": {"properties": {"mode": {"const": "HOSTED"}, "state": {"enum": ["DELIVERED", "ACKED"]}}, "required": ["mode", "state"]},
+          "then": {"required": ["deliveryReceiptDigest"]}
+        },
+        {
+          "if": {"properties": {"mode": {"const": "HOSTED"}, "state": {"const": "ACKED"}}, "required": ["mode", "state"]},
+          "then": {"required": ["acknowledgementDigest"]}
+        },
+        {
+          "if": {"properties": {"state": {"const": "PAYMENT_UNKNOWN"}}},
+          "then": {"required": ["paymentUnknownObservationProofDigest", "reconciliationDeadline"]},
+          "else": {
+            "not": {
+              "anyOf": [
+                {"required": ["paymentUnknownObservationProofDigest"]},
+                {"required": ["reconciliationDeadline"]}
+              ]
+            }
+          }
+        },
+        {
+          "if": {"properties": {"state": {"const": "FAILED_BEFORE_SETTLEMENT"}}},
+          "then": {
+            "not": {
+              "anyOf": [
+                {"required": ["settlementReceiptDigest"]},
+                {"required": ["deliveryReceiptDigest"]},
+                {"required": ["acknowledgementDigest"]}
+              ]
+            }
+          }
+        },
+        {
+          "if": {"required": ["paymentIntentRef"]},
+          "then": {"properties": {"state": {"enum": ["PAYMENT_AUTHORIZED", "EXECUTING", "OUTPUT_STAGED", "SETTLEMENT_PENDING", "PAYMENT_UNKNOWN", "DELIVERABLE", "DELIVERED", "ACKED", "RECOVERY_WINDOW_EXPIRED", "FAILED_BEFORE_SETTLEMENT"]}}}
+        },
+        {
+          "if": {"required": ["paymentProofDigest"]},
+          "then": {"properties": {"state": {"enum": ["PAYMENT_AUTHORIZED", "EXECUTING", "OUTPUT_STAGED", "SETTLEMENT_PENDING", "PAYMENT_UNKNOWN", "DELIVERABLE", "DELIVERED", "ACKED", "RECOVERY_WINDOW_EXPIRED", "FAILED_BEFORE_SETTLEMENT"]}}}
+        },
+        {
+          "if": {"required": ["outputStagingReceiptDigest"]},
+          "then": {"properties": {"state": {"enum": ["OUTPUT_STAGED", "SETTLEMENT_PENDING", "PAYMENT_UNKNOWN", "DELIVERABLE", "DELIVERED", "ACKED", "RECOVERY_WINDOW_EXPIRED", "FAILED_BEFORE_SETTLEMENT"]}}}
+        },
+        {
+          "if": {"required": ["settlementReceiptDigest"]},
+          "then": {"properties": {"state": {"enum": ["DELIVERABLE", "DELIVERED", "ACKED", "RECOVERY_WINDOW_EXPIRED"]}}}
+        },
+        {
+          "if": {"required": ["deliveryReceiptDigest"]},
+          "then": {"properties": {"state": {"enum": ["DELIVERED", "ACKED", "RECOVERY_WINDOW_EXPIRED"]}}}
+        },
+        {
+          "if": {"required": ["acknowledgementDigest"]},
+          "then": {"properties": {"state": {"const": "ACKED"}}}
+        },
+        {
+          "if": {"properties": {"mode": {"const": "DIRECT"}}, "required": ["mode"]},
+          "then": {
+            "properties": {
+              "state": {"not": {"enum": ["OUTPUT_STAGED", "DELIVERABLE", "DELIVERED", "RECOVERY_WINDOW_EXPIRED"]}}
+            },
+            "not": {
+              "anyOf": [
+                {"required": ["outputStagingReceiptDigest"]},
+                {"required": ["deliveryReceiptDigest"]},
+                {"required": ["acknowledgementDigest"]}
+              ]
+            }
+          },
+          "else": {"not": {"required": ["acceptanceReceiptDigest"]}}
+        },
+        {
+          "if": {"properties": {"mode": {"const": "DIRECT"}, "state": {"enum": ["SETTLEMENT_PENDING", "PAYMENT_UNKNOWN", "ACKED"]}}, "required": ["mode", "state"]},
+          "then": {"required": ["executionReceiptDigest"]}
+        },
+        {
+          "if": {"properties": {"mode": {"const": "DIRECT"}, "state": {"const": "ACKED"}}, "required": ["mode", "state"]},
+          "then": {"required": ["acceptanceReceiptDigest"]}
+        },
+        {
+          "if": {"required": ["executionReceiptDigest"]},
+          "then": {
+            "properties": {
+              "mode": {"const": "DIRECT"},
+              "state": {"enum": ["SETTLEMENT_PENDING", "PAYMENT_UNKNOWN", "ACKED"]}
+            }
+          }
+        },
+        {
+          "if": {"required": ["acceptanceReceiptDigest"]},
+          "then": {"properties": {"mode": {"const": "DIRECT"}, "state": {"const": "ACKED"}}}
+        }
+      ]
+    },
+    "treasuryProfile": {
+      "enum": ["SPONSORED_ISOLATED", "OWNER_DELEGATED"]
+    },
+    "paymentIntent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objectType",
+        "protocolVersion",
+        "paymentIntentId",
+        "fundingLedgerNamespace",
+        "fundingAuthority",
+        "settlementAuthority",
+        "observationAuthority",
+        "invocationId",
+        "buyerActorRef",
+        "challengeDigest",
+        "skuVersionDigest",
+        "sellerIdentityRef",
+        "payerAddress",
+        "payoutAddress",
+        "asset",
+        "amountAtomic",
+        "mode",
+        "requestedAssurance",
+        "facilitatorId",
+        "idempotencyKey",
+        "fingerprintDigest",
+        "state",
+        "createdAt",
+        "expiresAt"
+      ],
+      "properties": {
+        "objectType": {"const": "PaymentIntent"},
+        "protocolVersion": {"$ref": "#/$defs/wireVersion"},
+        "paymentIntentId": {"$ref": "#/$defs/identifier"},
+        "fundingLedgerNamespace": {"$ref": "#/$defs/identifier"},
+        "fundingAuthority": {"$ref": "#/$defs/issuerKeyRef"},
+        "settlementAuthority": {"$ref": "#/$defs/issuerKeyRef"},
+        "observationAuthority": {"$ref": "#/$defs/issuerKeyRef"},
+        "invocationId": {"$ref": "#/$defs/identifier"},
+        "tenantId": {"$ref": "#/$defs/identifier"},
+        "memberSuborgId": {"$ref": "#/$defs/identifier"},
+        "treasuryProfile": {"$ref": "#/$defs/treasuryProfile"},
+        "treasuryRef": {"$ref": "#/$defs/identifier"},
+        "agentId": {"$ref": "#/$defs/identifier"},
+        "runtimeId": {"$ref": "#/$defs/identifier"},
+        "runtimeCapabilityDigest": {"$ref": "#/$defs/sha256Digest"},
+        "buyerActorRef": {"$ref": "#/$defs/identifier"},
+        "mandateId": {"$ref": "#/$defs/identifier"},
+        "mandateVersion": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+        "challengeDigest": {"$ref": "#/$defs/sha256Digest"},
+        "skuVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+        "sellerIdentityRef": {"$ref": "#/$defs/identifier"},
+        "payerAddress": {"$ref": "#/$defs/nonZeroEvmAddress"},
+        "payoutAddress": {"$ref": "#/$defs/nonZeroEvmAddress"},
+        "asset": {"$ref": "#/$defs/baseUsdcAsset"},
+        "amountAtomic": {"$ref": "#/$defs/positiveUint256Decimal"},
+        "mode": {"enum": ["HOSTED", "DIRECT"]},
+        "requestedAssurance": {"$ref": "#/$defs/assuranceVector"},
+        "facilitatorId": {"$ref": "#/$defs/identifier"},
+        "idempotencyKey": {"$ref": "#/$defs/idempotencyKey"},
+        "fingerprintDigest": {"$ref": "#/$defs/sha256Digest"},
+        "state": {
+          "enum": [
+            "CREATED",
+            "RESERVED",
+            "AUTHORIZING",
+            "AUTHORIZED",
+            "AUTHORIZATION_UNKNOWN",
+            "SUBMITTED",
+            "CONFIRMED",
+            "SETTLEMENT_UNKNOWN",
+            "FINALIZED",
+            "DENIED",
+            "EXPIRED_BEFORE_AUTHORIZATION",
+            "AUTHORIZATION_EXPIRED",
+            "SETTLEMENT_REJECTED"
+          ]
+        },
+        "reservationId": {"$ref": "#/$defs/identifier"},
+        "authorizationDigest": {"$ref": "#/$defs/sha256Digest"},
+        "settlementReceiptDigest": {"$ref": "#/$defs/sha256Digest"},
+        "unknownObservationProofDigest": {"$ref": "#/$defs/sha256Digest"},
+        "reconciliationDeadline": {"$ref": "#/$defs/rfc3339Utc"},
+        "createdAt": {"$ref": "#/$defs/rfc3339Utc"},
+        "expiresAt": {"$ref": "#/$defs/rfc3339Utc"}
+      },
+      "allOf": [
+        {
+          "not": {
+            "properties": {
+              "requestedAssurance": {
+                "properties": {"authorization": {"const": "NONE"}},
+                "required": ["authorization"]
+              }
+            },
+            "required": ["requestedAssurance"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "requestedAssurance": {
+                "properties": {"authorization": {"const": "MANDATE_PROTECTED"}},
+                "required": ["authorization"]
+              }
+            },
+            "required": ["requestedAssurance"]
+          },
+          "then": {
+            "required": ["tenantId", "memberSuborgId", "treasuryProfile", "treasuryRef", "agentId", "runtimeId", "runtimeCapabilityDigest", "mandateId", "mandateVersion"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "requestedAssurance": {
+                "properties": {"authorization": {"const": "WALLET_SIGNED"}},
+                "required": ["authorization"]
+              }
+            },
+            "required": ["requestedAssurance"]
+          },
+          "then": {
+            "properties": {
+              "buyerActorRef": {"pattern": "^wallet_eip155_8453_[0-9a-f]{40}$"},
+              "state": {"not": {"const": "RESERVED"}}
+            },
+            "not": {
+              "anyOf": [
+                {"required": ["tenantId"]},
+                {"required": ["memberSuborgId"]},
+                {"required": ["treasuryProfile"]},
+                {"required": ["treasuryRef"]},
+                {"required": ["agentId"]},
+                {"required": ["runtimeId"]},
+                {"required": ["runtimeCapabilityDigest"]},
+                {"required": ["mandateId"]},
+                {"required": ["mandateVersion"]},
+                {"required": ["reservationId"]}
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "requestedAssurance": {
+                "properties": {"authorization": {"const": "MANDATE_PROTECTED"}},
+                "required": ["authorization"]
+              },
+              "state": {"enum": ["RESERVED", "AUTHORIZING", "AUTHORIZED", "AUTHORIZATION_UNKNOWN", "SUBMITTED", "CONFIRMED", "SETTLEMENT_UNKNOWN", "FINALIZED", "EXPIRED_BEFORE_AUTHORIZATION", "AUTHORIZATION_EXPIRED", "SETTLEMENT_REJECTED"]}
+            },
+            "required": ["requestedAssurance", "state"]
+          },
+          "then": {"required": ["reservationId"]}
+        },
+        {
+          "if": {"properties": {"state": {"enum": ["AUTHORIZED", "SUBMITTED", "CONFIRMED", "SETTLEMENT_UNKNOWN", "FINALIZED", "AUTHORIZATION_EXPIRED", "SETTLEMENT_REJECTED"]}}},
+          "then": {"required": ["authorizationDigest"]}
+        },
+        {
+          "if": {"properties": {"state": {"enum": ["AUTHORIZATION_UNKNOWN", "SETTLEMENT_UNKNOWN"]}}},
+          "then": {"required": ["reconciliationDeadline", "unknownObservationProofDigest"]},
+          "else": {
+            "not": {
+              "anyOf": [
+                {"required": ["reconciliationDeadline"]},
+                {"required": ["unknownObservationProofDigest"]}
+              ]
+            }
+          }
+        },
+        {
+          "if": {"properties": {"state": {"const": "FINALIZED"}}},
+          "then": {"required": ["settlementReceiptDigest"]}
+        },
+        {
+          "if": {"required": ["reservationId"]},
+          "then": {
+            "properties": {
+              "requestedAssurance": {
+                "properties": {"authorization": {"const": "MANDATE_PROTECTED"}},
+                "required": ["authorization"]
+              },
+              "state": {"not": {"const": "CREATED"}}
+            }
+          }
+        },
+        {
+          "if": {"required": ["authorizationDigest"]},
+          "then": {"properties": {"state": {"enum": ["AUTHORIZED", "SUBMITTED", "CONFIRMED", "SETTLEMENT_UNKNOWN", "FINALIZED", "AUTHORIZATION_EXPIRED", "SETTLEMENT_REJECTED"]}}}
+        },
+        {
+          "if": {"required": ["settlementReceiptDigest"]},
+          "then": {"properties": {"state": {"const": "FINALIZED"}}}
+        }
+      ]
+    },
+    "openAntX402Extension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objectType",
+        "protocolVersion",
+        "invocationId",
+        "operationId",
+        "serviceSkuId",
+        "skuVersionDigest",
+        "listingMandateDigest",
+        "requestDigest",
+        "paymentTermsDigest",
+        "sellerIdentityRef",
+        "payoutAddress",
+        "amountAtomic",
+        "asset",
+        "mode",
+        "assurance",
+        "nonce",
+        "issuedAt",
+        "expiresAt",
+        "signature"
+      ],
+      "properties": {
+        "objectType": {"const": "OpenAntX402Extension"},
+        "protocolVersion": {"$ref": "#/$defs/wireVersion"},
+        "invocationId": {"$ref": "#/$defs/identifier"},
+        "operationId": {"$ref": "#/$defs/identifier"},
+        "serviceSkuId": {"$ref": "#/$defs/identifier"},
+        "skuVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+        "listingMandateDigest": {"$ref": "#/$defs/sha256Digest"},
+        "requestDigest": {"$ref": "#/$defs/sha256Digest"},
+        "paymentTermsDigest": {"$ref": "#/$defs/sha256Digest"},
+        "sellerIdentityRef": {"$ref": "#/$defs/identifier"},
+        "payoutAddress": {"$ref": "#/$defs/nonZeroEvmAddress"},
+        "amountAtomic": {"$ref": "#/$defs/positiveUint256Decimal"},
+        "asset": {"$ref": "#/$defs/baseUsdcAsset"},
+        "mode": {"enum": ["HOSTED", "DIRECT"]},
+        "assurance": {"$ref": "#/$defs/assuranceVector"},
+        "nonce": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "issuedAt": {"$ref": "#/$defs/rfc3339Utc"},
+        "expiresAt": {"$ref": "#/$defs/rfc3339Utc"},
+        "signature": {"$ref": "#/$defs/signatureEnvelope"}
+      }
+    },
+    "x402Acceptance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scheme", "network", "amount", "asset", "payTo", "maxTimeoutSeconds"],
+      "properties": {
+        "scheme": {"const": "exact"},
+        "network": {"const": "eip155:8453"},
+        "amount": {"$ref": "#/$defs/positiveUint256Decimal"},
+        "asset": {"const": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"},
+        "payTo": {"$ref": "#/$defs/nonZeroEvmAddress"},
+        "maxTimeoutSeconds": {"type": "integer", "minimum": 1, "maximum": 90},
+        "extra": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "x402PaymentRequired": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x402Version", "resource", "accepts", "extensions"],
+      "properties": {
+        "x402Version": {"const": 2},
+        "resource": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["url", "mimeType"],
+          "properties": {
+            "url": {"$ref": "#/$defs/httpsUri"},
+            "description": {"type": "string", "maxLength": 1024},
+            "mimeType": {"type": "string", "maxLength": 128}
+          }
+        },
+        "accepts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {"$ref": "#/$defs/x402Acceptance"}
+        },
+        "extensions": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["openant"],
+          "properties": {
+            "openant": {"$ref": "#/$defs/openAntX402Extension"}
+          }
+        }
+      }
+    },
+    "paymentRequiredOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["objectType", "protocolVersion", "outcome", "paymentRequired"],
+      "properties": {
+        "objectType": {"const": "PaymentRequiredOutcome"},
+        "protocolVersion": {"$ref": "#/$defs/wireVersion"},
+        "outcome": {"const": "PAYMENT_REQUIRED"},
+        "paymentRequired": {"$ref": "#/$defs/x402PaymentRequired"}
+      }
+    },
+    "artifactManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["objectType", "protocolVersion", "artifactId", "mediaType", "bytes", "contentDigest"],
+      "properties": {
+        "objectType": {"const": "ArtifactManifest"},
+        "protocolVersion": {"$ref": "#/$defs/wireVersion"},
+        "artifactId": {"$ref": "#/$defs/identifier"},
+        "mediaType": {"type": "string", "minLength": 3, "maxLength": 128},
+        "bytes": {"type": "integer", "minimum": 1, "maximum": 104857600},
+        "contentDigest": {"$ref": "#/$defs/sha256Digest"}
+      }
+    },
+    "receiptBase": {
+      "type": "object",
+      "required": ["objectType", "protocolVersion", "receiptId", "invocationId", "issuedAt", "issuer", "claimsDigest", "signature"],
+      "properties": {
+        "objectType": {"type": "string"},
+        "protocolVersion": {"$ref": "#/$defs/wireVersion"},
+        "receiptId": {"$ref": "#/$defs/identifier"},
+        "invocationId": {"$ref": "#/$defs/identifier"},
+        "issuedAt": {"$ref": "#/$defs/rfc3339Utc"},
+        "issuer": {"$ref": "#/$defs/issuerKeyRef"},
+        "claimsDigest": {"$ref": "#/$defs/sha256Digest"},
+        "signature": {"$ref": "#/$defs/signatureEnvelope"}
+      }
+    },
+    "mandateAuthorizationProof": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "allOf": [
+        {"$ref": "#/$defs/receiptBase"},
+        {
+          "required": ["paymentIntentId", "paymentIntentFingerprintDigest", "fundingLedgerNamespace", "tenantId", "memberSuborgId", "treasuryProfile", "treasuryRef", "agentId", "runtimeId", "serviceSkuVersionDigest", "sellerIdentityRef", "mandateId", "mandateVersion", "runtimeCapabilityDigest", "reservationId", "challengeDigest", "paymentAuthorizationDigest", "decisionCode", "expiresAt", "amountAtomic", "asset", "payerAddress", "payeeAddress", "mode", "requestedAssurance", "facilitatorId"],
+          "properties": {
+            "objectType": {"const": "MandateAuthorizationProof"},
+            "paymentIntentId": {"$ref": "#/$defs/identifier"},
+            "paymentIntentFingerprintDigest": {"$ref": "#/$defs/sha256Digest"},
+            "fundingLedgerNamespace": {"$ref": "#/$defs/identifier"},
+            "tenantId": {"$ref": "#/$defs/identifier"},
+            "memberSuborgId": {"$ref": "#/$defs/identifier"},
+            "treasuryProfile": {"$ref": "#/$defs/treasuryProfile"},
+            "treasuryRef": {"$ref": "#/$defs/identifier"},
+            "agentId": {"$ref": "#/$defs/identifier"},
+            "runtimeId": {"$ref": "#/$defs/identifier"},
+            "serviceSkuVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+            "sellerIdentityRef": {"$ref": "#/$defs/identifier"},
+            "mandateId": {"$ref": "#/$defs/identifier"},
+            "mandateVersion": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+            "runtimeCapabilityDigest": {"$ref": "#/$defs/sha256Digest"},
+            "reservationId": {"$ref": "#/$defs/identifier"},
+            "challengeDigest": {"$ref": "#/$defs/sha256Digest"},
+            "paymentAuthorizationDigest": {"$ref": "#/$defs/sha256Digest"},
+            "decisionCode": {"const": "APPROVED"},
+            "expiresAt": {"$ref": "#/$defs/rfc3339Utc"},
+            "amountAtomic": {"$ref": "#/$defs/positiveUint256Decimal"},
+            "asset": {"$ref": "#/$defs/baseUsdcAsset"},
+            "payerAddress": {"$ref": "#/$defs/nonZeroEvmAddress"},
+            "payeeAddress": {"$ref": "#/$defs/nonZeroEvmAddress"},
+            "mode": {"enum": ["HOSTED", "DIRECT"]},
+            "requestedAssurance": {"$ref": "#/$defs/assuranceVector"},
+            "facilitatorId": {"$ref": "#/$defs/identifier"}
+          }
+        }
+      ]
+    },
+    "walletAuthorizationProof": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "allOf": [
+        {"$ref": "#/$defs/receiptBase"},
+        {
+          "required": ["paymentIntentId", "paymentIntentFingerprintDigest", "buyerActorRef", "serviceSkuVersionDigest", "challengeDigest", "paymentAuthorizationDigest", "expiresAt", "amountAtomic", "asset", "payerAddress", "payeeAddress", "mode", "requestedAssurance", "facilitatorId"],
+          "properties": {
+            "objectType": {"const": "WalletAuthorizationProof"},
+            "paymentIntentId": {"$ref": "#/$defs/identifier"},
+            "paymentIntentFingerprintDigest": {"$ref": "#/$defs/sha256Digest"},
+            "buyerActorRef": {"$ref": "#/$defs/identifier"},
+            "serviceSkuVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+            "challengeDigest": {"$ref": "#/$defs/sha256Digest"},
+            "paymentAuthorizationDigest": {"$ref": "#/$defs/sha256Digest"},
+            "expiresAt": {"$ref": "#/$defs/rfc3339Utc"},
+            "amountAtomic": {"$ref": "#/$defs/positiveUint256Decimal"},
+            "asset": {"$ref": "#/$defs/baseUsdcAsset"},
+            "payerAddress": {"$ref": "#/$defs/nonZeroEvmAddress"},
+            "payeeAddress": {"$ref": "#/$defs/nonZeroEvmAddress"},
+            "mode": {"enum": ["HOSTED", "DIRECT"]},
+            "requestedAssurance": {"$ref": "#/$defs/assuranceVector"},
+            "facilitatorId": {"$ref": "#/$defs/identifier"},
+            "signature": {
+              "description": "Standard Phase 0 Base USDC x402 v2 exact EIP-3009 signature. signedObjectDigest equals paymentAuthorizationDigest; claimsDigest is independently derived with RECEIPT_CLAIMS.",
+              "allOf": [
+                {"$ref": "#/$defs/signatureEnvelope"},
+                {"properties": {"scheme": {"const": "EIP712"}}}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "settlementReceipt": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "allOf": [
+        {"$ref": "#/$defs/receiptBase"},
+        {
+          "required": ["paymentIntentId", "paymentIntentFingerprintDigest", "fundingLedgerNamespace", "serviceSkuVersionDigest", "facilitatorId", "paymentAuthorizationDigest", "transactionDigest", "amountAtomic", "asset", "payerAddress", "payeeAddress", "finality"],
+          "properties": {
+            "objectType": {"const": "SettlementReceipt"},
+            "paymentIntentId": {"$ref": "#/$defs/identifier"},
+            "paymentIntentFingerprintDigest": {"$ref": "#/$defs/sha256Digest"},
+            "fundingLedgerNamespace": {"$ref": "#/$defs/identifier"},
+            "serviceSkuVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+            "facilitatorId": {"$ref": "#/$defs/identifier"},
+            "paymentAuthorizationDigest": {"$ref": "#/$defs/sha256Digest"},
+            "transactionDigest": {"$ref": "#/$defs/sha256Digest"},
+            "amountAtomic": {"$ref": "#/$defs/positiveUint256Decimal"},
+            "asset": {"$ref": "#/$defs/baseUsdcAsset"},
+            "payerAddress": {"$ref": "#/$defs/nonZeroEvmAddress"},
+            "payeeAddress": {"$ref": "#/$defs/nonZeroEvmAddress"},
+            "finality": {"const": "FINALIZED"}
+          }
+        }
+      ]
+    },
+    "commerceReceipt": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "allOf": [
+        {"$ref": "#/$defs/receiptBase"},
+        {
+          "required": ["serviceSkuVersionDigest", "requestDigest", "settlementReceiptDigest"],
+          "properties": {
+            "objectType": {"const": "CommerceReceipt"},
+            "serviceSkuVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+            "requestDigest": {"$ref": "#/$defs/sha256Digest"},
+            "settlementReceiptDigest": {"$ref": "#/$defs/sha256Digest"}
+          }
+        }
+      ]
+    },
+    "outputStagingReceipt": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "allOf": [
+        {"$ref": "#/$defs/receiptBase"},
+        {
+          "required": ["serviceSkuVersionDigest", "requestDigest", "contentBytes", "deliveryState", "availableUntil"],
+          "properties": {
+            "objectType": {"const": "OutputStagingReceipt"},
+            "serviceSkuVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+            "requestDigest": {"$ref": "#/$defs/sha256Digest"},
+            "responseDigest": {"$ref": "#/$defs/sha256Digest"},
+            "artifactManifestDigest": {"$ref": "#/$defs/sha256Digest"},
+            "contentBytes": {"type": "integer", "minimum": 0, "maximum": 104857600},
+            "deliveryState": {"const": "STAGED"},
+            "availableUntil": {"$ref": "#/$defs/rfc3339Utc"}
+          },
+          "oneOf": [{"required": ["responseDigest"]}, {"required": ["artifactManifestDigest"]}]
+        }
+      ]
+    },
+    "executionReceipt": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "allOf": [
+        {"$ref": "#/$defs/receiptBase"},
+        {
+          "required": ["serviceSkuVersionDigest", "requestDigest", "contentBytes"],
+          "properties": {
+            "objectType": {"const": "ExecutionReceipt"},
+            "serviceSkuVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+            "requestDigest": {"$ref": "#/$defs/sha256Digest"},
+            "responseDigest": {"$ref": "#/$defs/sha256Digest"},
+            "artifactManifestDigest": {"$ref": "#/$defs/sha256Digest"},
+            "contentBytes": {"type": "integer", "minimum": 0, "maximum": 104857600}
+          },
+          "oneOf": [{"required": ["responseDigest"]}, {"required": ["artifactManifestDigest"]}]
+        }
+      ]
+    },
+    "deliveryReceipt": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "allOf": [
+        {"$ref": "#/$defs/receiptBase"},
+        {
+          "required": ["serviceSkuVersionDigest", "contentBytes", "deliveryState", "availableUntil"],
+          "properties": {
+            "objectType": {"const": "DeliveryReceipt"},
+            "serviceSkuVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+            "responseDigest": {"$ref": "#/$defs/sha256Digest"},
+            "artifactManifestDigest": {"$ref": "#/$defs/sha256Digest"},
+            "contentBytes": {"type": "integer", "minimum": 0, "maximum": 104857600},
+            "deliveryState": {"enum": ["DELIVERABLE", "DELIVERED"]},
+            "availableUntil": {"$ref": "#/$defs/rfc3339Utc"}
+          },
+          "oneOf": [{"required": ["responseDigest"]}, {"required": ["artifactManifestDigest"]}]
+        }
+      ]
+    },
+    "acceptanceReceipt": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "allOf": [
+        {"$ref": "#/$defs/receiptBase"},
+        {
+          "required": ["serviceSkuVersionDigest", "buyerActorRef", "contentBytes", "deliveryState"],
+          "properties": {
+            "objectType": {"const": "AcceptanceReceipt"},
+            "serviceSkuVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+            "buyerActorRef": {"$ref": "#/$defs/identifier"},
+            "responseDigest": {"$ref": "#/$defs/sha256Digest"},
+            "artifactManifestDigest": {"$ref": "#/$defs/sha256Digest"},
+            "contentBytes": {"type": "integer", "minimum": 0, "maximum": 104857600},
+            "deliveryState": {"const": "ACCEPTED"}
+          },
+          "oneOf": [{"required": ["responseDigest"]}, {"required": ["artifactManifestDigest"]}]
+        }
+      ]
+    },
+    "fundingUnknownObservation": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "allOf": [
+        {"$ref": "#/$defs/receiptBase"},
+        {
+          "required": ["paymentIntentId", "paymentIntentFingerprintDigest", "fundingLedgerNamespace", "serviceSkuVersionDigest", "authorizationProfile", "observedState", "unknownBoundary", "reconciliationDeadline"],
+          "properties": {
+            "objectType": {"const": "FundingUnknownObservation"},
+            "paymentIntentId": {"$ref": "#/$defs/identifier"},
+            "paymentIntentFingerprintDigest": {"$ref": "#/$defs/sha256Digest"},
+            "fundingLedgerNamespace": {"$ref": "#/$defs/identifier"},
+            "serviceSkuVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+            "authorizationProfile": {"enum": ["MANDATE_PROTECTED", "WALLET_SIGNED"]},
+            "reservationId": {"$ref": "#/$defs/identifier"},
+            "authorizationDigest": {"$ref": "#/$defs/sha256Digest"},
+            "observedState": {"enum": ["AUTHORIZATION_UNKNOWN", "SETTLEMENT_UNKNOWN"]},
+            "unknownBoundary": {"enum": ["authorization", "settlement"]},
+            "reconciliationDeadline": {"$ref": "#/$defs/rfc3339Utc"}
+          },
+          "allOf": [
+            {
+              "if": {"properties": {"authorizationProfile": {"const": "MANDATE_PROTECTED"}}, "required": ["authorizationProfile"]},
+              "then": {"required": ["reservationId"]},
+              "else": {"not": {"required": ["reservationId"]}}
+            },
+            {
+              "if": {"properties": {"observedState": {"const": "SETTLEMENT_UNKNOWN"}}},
+              "then": {"required": ["authorizationDigest"], "properties": {"unknownBoundary": {"const": "settlement"}}},
+              "else": {"properties": {"unknownBoundary": {"const": "authorization"}}}
+            }
+          ]
+        }
+      ]
+    },
+    "receiptEnvelope": {
+      "oneOf": [
+        {"$ref": "#/$defs/mandateAuthorizationProof"},
+        {"$ref": "#/$defs/walletAuthorizationProof"},
+        {"$ref": "#/$defs/settlementReceipt"},
+        {"$ref": "#/$defs/commerceReceipt"},
+        {"$ref": "#/$defs/outputStagingReceipt"},
+        {"$ref": "#/$defs/executionReceipt"},
+        {"$ref": "#/$defs/deliveryReceipt"},
+        {"$ref": "#/$defs/acceptanceReceipt"},
+        {"$ref": "#/$defs/fundingUnknownObservation"}
+      ]
+    },
+    "deliveryAcknowledgement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objectType",
+        "protocolVersion",
+        "acknowledgementId",
+        "invocationId",
+        "buyerActorRef",
+        "deliveryReceiptDigest",
+        "contentKind",
+        "receivedContentDigest",
+        "receivedAt",
+        "attestation"
+      ],
+      "properties": {
+        "objectType": {"const": "DeliveryAcknowledgement"},
+        "protocolVersion": {"$ref": "#/$defs/wireVersion"},
+        "acknowledgementId": {"$ref": "#/$defs/identifier"},
+        "invocationId": {"$ref": "#/$defs/identifier"},
+        "buyerActorRef": {"$ref": "#/$defs/identifier"},
+        "deliveryReceiptDigest": {"$ref": "#/$defs/sha256Digest"},
+        "contentKind": {"enum": ["RESPONSE", "ARTIFACT"]},
+        "artifactManifestDigest": {"$ref": "#/$defs/sha256Digest"},
+        "receivedContentDigest": {"$ref": "#/$defs/sha256Digest"},
+        "receivedAt": {"$ref": "#/$defs/rfc3339Utc"},
+        "attestation": {"$ref": "#/$defs/signatureEnvelope"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"contentKind": {"const": "ARTIFACT"}}},
+          "then": {"required": ["artifactManifestDigest"]},
+          "else": {"not": {"required": ["artifactManifestDigest"]}}
+        }
+      ]
+    },
+    "proofReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["objectType", "invocationId", "serviceSkuVersionDigest", "issuer", "keyId", "objectDigest", "issuedAt", "disclosure"],
+      "properties": {
+        "objectType": {
+          "enum": [
+            "MandateAuthorizationProof",
+            "WalletAuthorizationProof",
+            "SettlementReceipt",
+            "CommerceReceipt",
+            "OutputStagingReceipt",
+            "ExecutionReceipt",
+            "DeliveryReceipt",
+            "AcceptanceReceipt",
+            "FundingUnknownObservation",
+            "ListingMandate",
+            "SellerIdentityCredential"
+          ]
+        },
+        "invocationId": {"$ref": "#/$defs/identifier"},
+        "serviceSkuVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+        "issuer": {"$ref": "#/$defs/identifier"},
+        "keyId": {"$ref": "#/$defs/identifier"},
+        "objectDigest": {"$ref": "#/$defs/sha256Digest"},
+        "issuedAt": {"$ref": "#/$defs/rfc3339Utc"},
+        "disclosure": {"enum": ["PRIVATE_HELD", "AUTHORIZED_DISCLOSURE", "PUBLIC"]}
+      }
+    },
+    "proofBundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objectType",
+        "protocolVersion",
+        "proofBundleId",
+        "invocationId",
+        "serviceSkuVersionDigest",
+        "assurance",
+        "proofs",
+        "createdAt",
+        "manifestDigest"
+      ],
+      "properties": {
+        "objectType": {"const": "ProofBundle"},
+        "protocolVersion": {"$ref": "#/$defs/wireVersion"},
+        "proofBundleId": {"$ref": "#/$defs/identifier"},
+        "invocationId": {"$ref": "#/$defs/identifier"},
+        "serviceSkuVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+        "assurance": {"$ref": "#/$defs/assuranceVector"},
+        "proofs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {"$ref": "#/$defs/proofReference"}
+        },
+        "createdAt": {"$ref": "#/$defs/rfc3339Utc"},
+        "manifestDigest": {"$ref": "#/$defs/sha256Digest"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"assurance": {"properties": {"authorization": {"const": "WALLET_SIGNED"}}}}},
+          "then": {"properties": {"proofs": {"contains": {"properties": {"objectType": {"const": "WalletAuthorizationProof"}}, "required": ["objectType"]}, "minContains": 1}}}
+        },
+        {
+          "if": {"properties": {"assurance": {"properties": {"authorization": {"const": "MANDATE_PROTECTED"}}}}},
+          "then": {"properties": {"proofs": {"contains": {"properties": {"objectType": {"const": "MandateAuthorizationProof"}}, "required": ["objectType"]}, "minContains": 1}}}
+        },
+        {
+          "if": {"properties": {"assurance": {"properties": {"settlement": {"const": "FINALITY_VERIFIED"}}}}},
+          "then": {"properties": {"proofs": {"contains": {"properties": {"objectType": {"const": "SettlementReceipt"}}, "required": ["objectType"]}, "minContains": 1}}}
+        },
+        {
+          "if": {"properties": {"assurance": {"properties": {"delivery": {"const": "SELLER_ASSERTED"}}}}},
+          "then": {"properties": {"proofs": {"contains": {"properties": {"objectType": {"const": "ExecutionReceipt"}}, "required": ["objectType"]}, "minContains": 1}}}
+        },
+        {
+          "if": {"properties": {"assurance": {"properties": {"delivery": {"const": "DIRECT_BUYER_ACCEPTED"}}}}},
+          "then": {
+            "properties": {
+              "proofs": {
+                "allOf": [
+                  {"contains": {"properties": {"objectType": {"const": "ExecutionReceipt"}}, "required": ["objectType"]}, "minContains": 1},
+                  {"contains": {"properties": {"objectType": {"const": "AcceptanceReceipt"}}, "required": ["objectType"]}, "minContains": 1}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {"properties": {"assurance": {"properties": {"delivery": {"const": "HOSTED_RECOVERABLE"}}}}},
+          "then": {
+            "properties": {
+              "proofs": {
+                "allOf": [
+                  {"contains": {"properties": {"objectType": {"const": "OutputStagingReceipt"}}, "required": ["objectType"]}, "minContains": 1},
+                  {"contains": {"properties": {"objectType": {"const": "DeliveryReceipt"}}, "required": ["objectType"]}, "minContains": 1}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {"properties": {"assurance": {"properties": {"contentCustody": {"const": "HOSTED_EPHEMERAL"}}}}},
+          "then": {"properties": {"proofs": {"contains": {"properties": {"objectType": {"const": "DeliveryReceipt"}}, "required": ["objectType"]}, "minContains": 1}}}
+        },
+        {
+          "if": {"properties": {"assurance": {"properties": {"contentCustody": {"const": "HOSTED_ENCRYPTED_BUFFER"}}}}},
+          "then": {"properties": {"proofs": {"contains": {"properties": {"objectType": {"const": "OutputStagingReceipt"}}, "required": ["objectType"]}, "minContains": 1}}}
+        },
+        {
+          "if": {"properties": {"assurance": {"properties": {"identity": {"const": "PLATFORM_BOUND"}}}}},
+          "then": {"properties": {"proofs": {"contains": {"properties": {"objectType": {"const": "ListingMandate"}}, "required": ["objectType"]}, "minContains": 1}}}
+        },
+        {
+          "if": {"properties": {"assurance": {"properties": {"identity": {"const": "VERIFIED_SELLER"}}}}},
+          "then": {
+            "properties": {
+              "proofs": {
+                "allOf": [
+                  {"contains": {"properties": {"objectType": {"const": "ListingMandate"}}, "required": ["objectType"]}, "minContains": 1},
+                  {"contains": {"properties": {"objectType": {"const": "SellerIdentityCredential"}}, "required": ["objectType"]}, "minContains": 1}
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "errorCode": {
+      "enum": [
+        "SCHEMA_INVALID",
+        "UNSUPPORTED_PROTOCOL_VERSION",
+        "CHALLENGE_INVALID",
+        "CHALLENGE_EXPIRED",
+        "LISTING_REVOKED",
+        "MANDATE_NOT_FOUND",
+        "MANDATE_SCOPE_DENIED",
+        "APPROVAL_REQUIRED",
+        "BUDGET_EXCEEDED",
+        "RESERVATION_CONFLICT",
+        "IDEMPOTENCY_FINGERPRINT_CONFLICT",
+        "AUTHORIZATION_FAILED",
+        "AUTHORIZATION_UNKNOWN",
+        "PAYMENT_PATH_UNAVAILABLE",
+        "SETTLEMENT_UNKNOWN",
+        "SETTLEMENT_REJECTED",
+        "OUTPUT_NOT_CHARGEABLE",
+        "OUTPUT_NOT_STAGED",
+        "PROOF_INCOMPLETE",
+        "PROOF_BINDING_MISMATCH",
+        "TENANT_CONTEXT_MISMATCH",
+        "ILLEGAL_STATE_TRANSITION"
+      ]
+    },
+    "errorContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "invocationId": {"$ref": "#/$defs/identifier"},
+        "paymentIntentId": {"$ref": "#/$defs/identifier"},
+        "serviceSkuVersionDigest": {"$ref": "#/$defs/sha256Digest"},
+        "mandateId": {"$ref": "#/$defs/identifier"},
+        "issuer": {"$ref": "#/$defs/identifier"},
+        "keyId": {"$ref": "#/$defs/identifier"},
+        "state": {"type": "string", "maxLength": 64},
+        "attempt": {"type": "integer", "minimum": 0, "maximum": 1000}
+      }
+    },
+    "protocolError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["objectType", "protocolVersion", "code", "message", "retryable", "boundary", "reason", "requestId", "traceId", "context"],
+      "properties": {
+        "objectType": {"const": "ProtocolError"},
+        "protocolVersion": {"$ref": "#/$defs/wireVersion"},
+        "code": {"$ref": "#/$defs/errorCode"},
+        "message": {"type": "string", "minLength": 1, "maxLength": 1024},
+        "retryable": {"type": "boolean"},
+        "boundary": {
+          "enum": ["protocol", "challenge", "catalog", "tenant", "authorization", "budget", "facilitator", "settlement", "execution", "content_escrow", "proof", "state_machine"]
+        },
+        "reason": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Z][A-Z0-9_]+$"},
+        "requestId": {"$ref": "#/$defs/identifier"},
+        "traceId": {"type": "string", "pattern": "^[a-f0-9]{32}$"},
+        "context": {"$ref": "#/$defs/errorContext"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"code": {"enum": ["CHALLENGE_EXPIRED", "RESERVATION_CONFLICT", "AUTHORIZATION_FAILED", "AUTHORIZATION_UNKNOWN", "PAYMENT_PATH_UNAVAILABLE", "SETTLEMENT_UNKNOWN", "OUTPUT_NOT_STAGED", "PROOF_INCOMPLETE"]}}},
+          "then": {"properties": {"retryable": {"const": true}}},
+          "else": {"properties": {"retryable": {"const": false}}}
+        },
+        {
+          "if": {"properties": {"code": {"enum": ["SCHEMA_INVALID", "UNSUPPORTED_PROTOCOL_VERSION", "IDEMPOTENCY_FINGERPRINT_CONFLICT"]}}},
+          "then": {"properties": {"boundary": {"const": "protocol"}}}
+        },
+        {
+          "if": {"properties": {"code": {"enum": ["CHALLENGE_INVALID", "CHALLENGE_EXPIRED"]}}},
+          "then": {"properties": {"boundary": {"const": "challenge"}}}
+        },
+        {
+          "if": {"properties": {"code": {"const": "LISTING_REVOKED"}}},
+          "then": {"properties": {"boundary": {"const": "catalog"}}}
+        },
+        {
+          "if": {"properties": {"code": {"enum": ["MANDATE_NOT_FOUND", "MANDATE_SCOPE_DENIED", "APPROVAL_REQUIRED", "AUTHORIZATION_FAILED", "AUTHORIZATION_UNKNOWN"]}}},
+          "then": {"properties": {"boundary": {"const": "authorization"}}}
+        },
+        {
+          "if": {"properties": {"code": {"enum": ["BUDGET_EXCEEDED", "RESERVATION_CONFLICT"]}}},
+          "then": {"properties": {"boundary": {"const": "budget"}}}
+        },
+        {
+          "if": {"properties": {"code": {"const": "PAYMENT_PATH_UNAVAILABLE"}}},
+          "then": {"properties": {"boundary": {"const": "facilitator"}}}
+        },
+        {
+          "if": {"properties": {"code": {"enum": ["SETTLEMENT_UNKNOWN", "SETTLEMENT_REJECTED"]}}},
+          "then": {"properties": {"boundary": {"const": "settlement"}}}
+        },
+        {
+          "if": {"properties": {"code": {"const": "OUTPUT_NOT_CHARGEABLE"}}},
+          "then": {"properties": {"boundary": {"const": "execution"}}}
+        },
+        {
+          "if": {"properties": {"code": {"const": "OUTPUT_NOT_STAGED"}}},
+          "then": {"properties": {"boundary": {"const": "content_escrow"}}}
+        },
+        {
+          "if": {"properties": {"code": {"enum": ["PROOF_INCOMPLETE", "PROOF_BINDING_MISMATCH"]}}},
+          "then": {"properties": {"boundary": {"const": "proof"}}}
+        },
+        {
+          "if": {"properties": {"code": {"const": "TENANT_CONTEXT_MISMATCH"}}},
+          "then": {"properties": {"boundary": {"const": "tenant"}}}
+        },
+        {
+          "if": {"properties": {"code": {"const": "ILLEGAL_STATE_TRANSITION"}}},
+          "then": {"properties": {"boundary": {"const": "state_machine"}}}
+        }
+      ]
+    }
+  }
+}

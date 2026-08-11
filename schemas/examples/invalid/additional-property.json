@@ -1,0 +1,17 @@
+{
+  "definition": "serviceSkuVersion",
+  "expectedCode": "SCHEMA_INVALID",
+  "value": {
+    "objectType": "ServiceSKUVersion",
+    "protocolVersion": "0.1",
+    "serviceSkuId": "sku_weather",
+    "version": 1,
+    "operationId": "operation_weather_current",
+    "sellerIdentityRef": "seller_acme",
+    "serviceDefinitionVersionDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "offerVersionDigest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "endpointDescriptorVersionDigest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "skuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "platformMayChangePrice": true
+  }
+}

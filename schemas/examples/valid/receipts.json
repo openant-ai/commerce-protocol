@@ -1,0 +1,206 @@
+{
+  "cases": [
+    {
+      "definition": "receiptEnvelope",
+      "value": {
+        "objectType": "MandateAuthorizationProof",
+        "protocolVersion": "0.1",
+        "receiptId": "receipt_authorization_1",
+        "invocationId": "invocation_weather_1",
+        "paymentIntentId": "payment_intent_1",
+        "paymentIntentFingerprintDigest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "fundingLedgerNamespace": "zero_x_key:funding_ledger_1",
+        "tenantId": "tenant_openant",
+        "memberSuborgId": "suborg_member_1",
+        "treasuryProfile": "SPONSORED_ISOLATED",
+        "treasuryRef": "treasury_opaque_1",
+        "agentId": "agent_buyer_1",
+        "runtimeId": "runtime_cli_1",
+        "serviceSkuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "sellerIdentityRef": "seller_acme",
+        "mandateId": "mandate_payment_1",
+        "mandateVersion": 3,
+        "runtimeCapabilityDigest": "sha256:1212121212121212121212121212121212121212121212121212121212121212",
+        "reservationId": "reservation_1",
+        "challengeDigest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+        "paymentAuthorizationDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "decisionCode": "APPROVED",
+        "expiresAt": "2026-08-10T00:05:00Z",
+        "amountAtomic": "100000",
+        "asset": {"network": "eip155:8453", "namespace": "erc20", "reference": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", "symbol": "USDC", "decimals": 6},
+        "payerAddress": "0x2222222222222222222222222222222222222222",
+        "payeeAddress": "0x1111111111111111111111111111111111111111",
+        "mode": "HOSTED",
+        "requestedAssurance": {"authorization": "MANDATE_PROTECTED", "settlement": "FINALITY_VERIFIED", "delivery": "HOSTED_RECOVERABLE", "contentCustody": "HOSTED_ENCRYPTED_BUFFER", "identity": "VERIFIED_SELLER"},
+        "facilitatorId": "facilitator_0xkey_1",
+        "issuedAt": "2026-08-10T00:02:00Z",
+        "issuer": {"issuer": "zero_x_key", "keyId": "key_authorization_1"},
+        "claimsDigest": "sha256:1010101010101010101010101010101010101010101010101010101010101010",
+        "signature": {"scheme": "APP_PROOF_COMMERCE_V1", "issuer": "zero_x_key", "keyId": "key_authorization_1", "signedObjectDigest": "sha256:1010101010101010101010101010101010101010101010101010101010101010", "signature": "authorization_proof_signature_1"}
+      }
+    },
+    {
+      "definition": "receiptEnvelope",
+      "value": {
+        "objectType": "WalletAuthorizationProof",
+        "protocolVersion": "0.1",
+        "receiptId": "receipt_wallet_auth_1",
+        "invocationId": "invocation_weather_external_1",
+        "paymentIntentId": "payment_intent_external_wallet_1",
+        "paymentIntentFingerprintDigest": "sha256:9191919191919191919191919191919191919191919191919191919191919191",
+        "buyerActorRef": "wallet_eip155_8453_2222222222222222222222222222222222222222",
+        "serviceSkuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "challengeDigest": "sha256:8989898989898989898989898989898989898989898989898989898989898989",
+        "paymentAuthorizationDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expiresAt": "2026-08-10T00:05:00Z",
+        "amountAtomic": "100000",
+        "asset": {"network": "eip155:8453", "namespace": "erc20", "reference": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", "symbol": "USDC", "decimals": 6},
+        "payerAddress": "0x2222222222222222222222222222222222222222",
+        "payeeAddress": "0x1111111111111111111111111111111111111111",
+        "mode": "HOSTED",
+        "requestedAssurance": {"authorization": "WALLET_SIGNED", "settlement": "FINALITY_VERIFIED", "delivery": "HOSTED_RECOVERABLE", "contentCustody": "HOSTED_ENCRYPTED_BUFFER", "identity": "ANONYMOUS_WALLET"},
+        "facilitatorId": "facilitator_0xkey_1",
+        "issuedAt": "2026-08-10T00:02:00Z",
+        "issuer": {"issuer": "wallet_eip155_8453_2222222222222222222222222222222222222222", "keyId": "wallet_key_2222"},
+        "claimsDigest": "sha256:2020202020202020202020202020202020202020202020202020202020202020",
+        "signature": {"scheme": "EIP712", "issuer": "wallet_eip155_8453_2222222222222222222222222222222222222222", "keyId": "wallet_key_2222", "signedObjectDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "signature": "wallet_authorization_signature_1"}
+      }
+    },
+    {
+      "definition": "receiptEnvelope",
+      "value": {
+        "objectType": "SettlementReceipt",
+        "protocolVersion": "0.1",
+        "receiptId": "receipt_settlement_1",
+        "invocationId": "invocation_weather_1",
+        "paymentIntentId": "payment_intent_1",
+        "paymentIntentFingerprintDigest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "fundingLedgerNamespace": "zero_x_key:funding_ledger_1",
+        "serviceSkuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "facilitatorId": "facilitator_0xkey_1",
+        "paymentAuthorizationDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "transactionDigest": "sha256:3030303030303030303030303030303030303030303030303030303030303030",
+        "amountAtomic": "100000",
+        "asset": {"network": "eip155:8453", "namespace": "erc20", "reference": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", "symbol": "USDC", "decimals": 6},
+        "payerAddress": "0x2222222222222222222222222222222222222222",
+        "payeeAddress": "0x1111111111111111111111111111111111111111",
+        "finality": "FINALIZED",
+        "issuedAt": "2026-08-10T00:04:00Z",
+        "issuer": {"issuer": "zero_x_key_facilitator", "keyId": "key_settlement_1"},
+        "claimsDigest": "sha256:4040404040404040404040404040404040404040404040404040404040404040",
+        "signature": {"scheme": "DETACHED_JWS_ES256", "issuer": "zero_x_key_facilitator", "keyId": "key_settlement_1", "signedObjectDigest": "sha256:4040404040404040404040404040404040404040404040404040404040404040", "signature": "settlement_receipt_signature_1"}
+      }
+    },
+    {
+      "definition": "receiptEnvelope",
+      "value": {
+        "objectType": "CommerceReceipt",
+        "protocolVersion": "0.1",
+        "receiptId": "receipt_commerce_1",
+        "invocationId": "invocation_weather_1",
+        "serviceSkuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "requestDigest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "settlementReceiptDigest": "sha256:4040404040404040404040404040404040404040404040404040404040404040",
+        "issuedAt": "2026-08-10T00:04:01Z",
+        "issuer": {"issuer": "openant_core", "keyId": "key_commerce_1"},
+        "claimsDigest": "sha256:5050505050505050505050505050505050505050505050505050505050505050",
+        "signature": {"scheme": "DETACHED_JWS_EDDSA", "issuer": "openant_core", "keyId": "key_commerce_1", "signedObjectDigest": "sha256:5050505050505050505050505050505050505050505050505050505050505050", "signature": "commerce_receipt_signature_1"}
+      }
+    },
+    {
+      "definition": "receiptEnvelope",
+      "value": {
+        "objectType": "OutputStagingReceipt",
+        "protocolVersion": "0.1",
+        "receiptId": "receipt_staging_1",
+        "invocationId": "invocation_weather_1",
+        "serviceSkuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "requestDigest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "responseDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "contentBytes": 128,
+        "deliveryState": "STAGED",
+        "availableUntil": "2026-08-11T00:03:00Z",
+        "issuedAt": "2026-08-10T00:03:00Z",
+        "issuer": {"issuer": "openant_gateway", "keyId": "key_delivery_1"},
+        "claimsDigest": "sha256:6060606060606060606060606060606060606060606060606060606060606060",
+        "signature": {"scheme": "DETACHED_JWS_EDDSA", "issuer": "openant_gateway", "keyId": "key_delivery_1", "signedObjectDigest": "sha256:6060606060606060606060606060606060606060606060606060606060606060", "signature": "staging_receipt_signature_1"}
+      }
+    },
+    {
+      "definition": "receiptEnvelope",
+      "value": {
+        "objectType": "ExecutionReceipt",
+        "protocolVersion": "0.1",
+        "receiptId": "receipt_execution_1",
+        "invocationId": "invocation_weather_1",
+        "serviceSkuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "requestDigest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "responseDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "contentBytes": 128,
+        "issuedAt": "2026-08-10T00:02:59Z",
+        "issuer": {"issuer": "seller_acme", "keyId": "key_execution_1"},
+        "claimsDigest": "sha256:7070707070707070707070707070707070707070707070707070707070707070",
+        "signature": {"scheme": "DETACHED_JWS_EDDSA", "issuer": "seller_acme", "keyId": "key_execution_1", "signedObjectDigest": "sha256:7070707070707070707070707070707070707070707070707070707070707070", "signature": "execution_receipt_signature_1"}
+      }
+    },
+    {
+      "definition": "receiptEnvelope",
+      "value": {
+        "objectType": "DeliveryReceipt",
+        "protocolVersion": "0.1",
+        "receiptId": "receipt_delivery_1",
+        "invocationId": "invocation_weather_1",
+        "serviceSkuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "responseDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "contentBytes": 128,
+        "deliveryState": "DELIVERED",
+        "availableUntil": "2026-08-11T00:03:00Z",
+        "issuedAt": "2026-08-10T00:05:00Z",
+        "issuer": {"issuer": "openant_gateway", "keyId": "key_delivery_1"},
+        "claimsDigest": "sha256:8080808080808080808080808080808080808080808080808080808080808080",
+        "signature": {"scheme": "DETACHED_JWS_EDDSA", "issuer": "openant_gateway", "keyId": "key_delivery_1", "signedObjectDigest": "sha256:8080808080808080808080808080808080808080808080808080808080808080", "signature": "delivery_receipt_signature_1"}
+      }
+    },
+    {
+      "definition": "receiptEnvelope",
+      "value": {
+        "objectType": "AcceptanceReceipt",
+        "protocolVersion": "0.1",
+        "receiptId": "receipt_acceptance_1",
+        "invocationId": "invocation_weather_1",
+        "serviceSkuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "responseDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "contentBytes": 128,
+        "deliveryState": "ACCEPTED",
+        "buyerActorRef": "agent_buyer_1",
+        "issuedAt": "2026-08-10T00:06:00Z",
+        "issuer": {"issuer": "agent_buyer_1", "keyId": "key_acceptance_1"},
+        "claimsDigest": "sha256:9090909090909090909090909090909090909090909090909090909090909090",
+        "signature": {"scheme": "DETACHED_JWS_EDDSA", "issuer": "agent_buyer_1", "keyId": "key_acceptance_1", "signedObjectDigest": "sha256:9090909090909090909090909090909090909090909090909090909090909090", "signature": "acceptance_receipt_signature_1"}
+      }
+    },
+    {
+      "definition": "receiptEnvelope",
+      "value": {
+        "objectType": "FundingUnknownObservation",
+        "protocolVersion": "0.1",
+        "receiptId": "receipt_unknown_1",
+        "invocationId": "invocation_weather_1",
+        "paymentIntentId": "payment_intent_1",
+        "paymentIntentFingerprintDigest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "fundingLedgerNamespace": "zero_x_key:funding_ledger_1",
+        "serviceSkuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "authorizationProfile": "MANDATE_PROTECTED",
+        "reservationId": "reservation_1",
+        "authorizationDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observedState": "SETTLEMENT_UNKNOWN",
+        "unknownBoundary": "settlement",
+        "reconciliationDeadline": "2026-08-10T00:20:00Z",
+        "issuedAt": "2026-08-10T00:05:01Z",
+        "issuer": {"issuer": "zero_x_key", "keyId": "key_observation_1"},
+        "claimsDigest": "sha256:abababababababababababababababababababababababababababababababab",
+        "signature": {"scheme": "APP_PROOF_COMMERCE_V1", "issuer": "zero_x_key", "keyId": "key_observation_1", "signedObjectDigest": "sha256:abababababababababababababababababababababababababababababababab", "signature": "funding_unknown_observation_signature_1"}
+      }
+    }
+  ]
+}

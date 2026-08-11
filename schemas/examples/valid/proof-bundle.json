@@ -1,0 +1,81 @@
+{
+  "definition": "proofBundle",
+  "value": {
+    "objectType": "ProofBundle",
+    "protocolVersion": "0.1",
+    "proofBundleId": "proof_bundle_1",
+    "invocationId": "invocation_weather_1",
+    "serviceSkuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "assurance": {
+      "authorization": "MANDATE_PROTECTED",
+      "settlement": "FINALITY_VERIFIED",
+      "delivery": "HOSTED_RECOVERABLE",
+      "contentCustody": "HOSTED_ENCRYPTED_BUFFER",
+      "identity": "VERIFIED_SELLER"
+    },
+    "proofs": [
+      {
+        "objectType": "MandateAuthorizationProof",
+        "invocationId": "invocation_weather_1",
+        "serviceSkuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "issuer": "zero_x_key",
+        "keyId": "key_authorization_1",
+        "objectDigest": "sha256:1010101010101010101010101010101010101010101010101010101010101010",
+        "issuedAt": "2026-08-10T00:02:00Z",
+        "disclosure": "PRIVATE_HELD"
+      },
+      {
+        "objectType": "SettlementReceipt",
+        "invocationId": "invocation_weather_1",
+        "serviceSkuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "issuer": "zero_x_key_facilitator",
+        "keyId": "key_settlement_1",
+        "objectDigest": "sha256:4040404040404040404040404040404040404040404040404040404040404040",
+        "issuedAt": "2026-08-10T00:04:00Z",
+        "disclosure": "PRIVATE_HELD"
+      },
+      {
+        "objectType": "OutputStagingReceipt",
+        "invocationId": "invocation_weather_1",
+        "serviceSkuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "issuer": "openant_gateway",
+        "keyId": "key_delivery_1",
+        "objectDigest": "sha256:6060606060606060606060606060606060606060606060606060606060606060",
+        "issuedAt": "2026-08-10T00:03:00Z",
+        "disclosure": "PRIVATE_HELD"
+      },
+      {
+        "objectType": "DeliveryReceipt",
+        "invocationId": "invocation_weather_1",
+        "serviceSkuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "issuer": "openant_gateway",
+        "keyId": "key_delivery_1",
+        "objectDigest": "sha256:8080808080808080808080808080808080808080808080808080808080808080",
+        "issuedAt": "2026-08-10T00:05:00Z",
+        "disclosure": "PRIVATE_HELD"
+      },
+      {
+        "objectType": "ListingMandate",
+        "invocationId": "invocation_weather_1",
+        "serviceSkuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "issuer": "seller_acme",
+        "keyId": "key_listing_1",
+        "objectDigest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "issuedAt": "2026-08-10T00:00:00Z",
+        "disclosure": "PRIVATE_HELD"
+      },
+      {
+        "objectType": "SellerIdentityCredential",
+        "invocationId": "invocation_weather_1",
+        "serviceSkuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "issuer": "openant_identity",
+        "keyId": "key_identity_1",
+        "objectDigest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "issuedAt": "2026-08-10T00:00:00Z",
+        "disclosure": "PRIVATE_HELD"
+      }
+    ],
+    "createdAt": "2026-08-10T00:05:00Z",
+    "manifestDigest": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  }
+}

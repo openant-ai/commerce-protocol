@@ -1,0 +1,218 @@
+{
+  "cases": [
+    {
+      "definition": "paymentRequiredOutcome",
+      "value": {
+        "objectType": "PaymentRequiredOutcome",
+        "protocolVersion": "0.1",
+        "outcome": "PAYMENT_REQUIRED",
+        "paymentRequired": {
+          "x402Version": 2,
+          "resource": {
+            "url": "https://commerce.openant.ai/v1/invoke/weather",
+            "description": "Current weather lookup",
+            "mimeType": "application/json"
+          },
+          "accepts": [
+            {
+              "scheme": "exact",
+              "network": "eip155:8453",
+              "amount": "100000",
+              "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+              "payTo": "0x1111111111111111111111111111111111111111",
+              "maxTimeoutSeconds": 90,
+              "extra": {}
+            }
+          ],
+          "extensions": {
+            "openant": {
+              "objectType": "OpenAntX402Extension",
+              "protocolVersion": "0.1",
+              "invocationId": "invocation_weather_1",
+              "operationId": "operation_weather_current",
+              "serviceSkuId": "sku_weather",
+              "skuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+              "listingMandateDigest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+              "requestDigest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+              "paymentTermsDigest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+              "sellerIdentityRef": "seller_acme",
+              "payoutAddress": "0x1111111111111111111111111111111111111111",
+              "amountAtomic": "100000",
+              "asset": {
+                "network": "eip155:8453",
+                "namespace": "erc20",
+                "reference": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                "symbol": "USDC",
+                "decimals": 6
+              },
+              "mode": "HOSTED",
+              "assurance": {
+                "authorization": "MANDATE_PROTECTED",
+                "settlement": "FINALITY_VERIFIED",
+                "delivery": "HOSTED_RECOVERABLE",
+                "contentCustody": "HOSTED_ENCRYPTED_BUFFER",
+                "identity": "VERIFIED_SELLER"
+              },
+              "nonce": "nonce_weather_0001",
+              "issuedAt": "2026-08-10T00:00:00Z",
+              "expiresAt": "2026-08-10T00:05:00Z",
+              "signature": {
+                "scheme": "DETACHED_JWS_EDDSA",
+                "issuer": "openant_gateway",
+                "keyId": "key_challenge_1",
+                "signedObjectDigest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+                "signature": "eyJhbGciOiJFZERTQSJ9..challenge_signature_1"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "definition": "invocation",
+      "value": {
+        "objectType": "Invocation",
+        "protocolVersion": "0.1",
+        "invocationId": "invocation_weather_1",
+        "operationId": "operation_weather_current",
+        "serviceSkuId": "sku_weather",
+        "skuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "buyerActorRef": "agent_buyer_1",
+        "mode": "HOSTED",
+        "state": "PAYMENT_REQUIRED",
+        "requestDigest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "idempotencyKey": "weather-invocation-0001",
+        "createdAt": "2026-08-10T00:00:00Z",
+        "deadline": "2026-08-10T00:01:30Z"
+      }
+    },
+    {
+      "definition": "paymentIntent",
+      "value": {
+        "objectType": "PaymentIntent",
+        "protocolVersion": "0.1",
+        "paymentIntentId": "payment_intent_1",
+        "fundingLedgerNamespace": "zero_x_key:funding_ledger_1",
+        "fundingAuthority": {"issuer": "zero_x_key", "keyId": "key_authorization_1"},
+        "settlementAuthority": {"issuer": "zero_x_key_facilitator", "keyId": "key_settlement_1"},
+        "observationAuthority": {"issuer": "zero_x_key", "keyId": "key_observation_1"},
+        "invocationId": "invocation_weather_1",
+        "tenantId": "tenant_openant",
+        "memberSuborgId": "suborg_member_1",
+        "treasuryProfile": "SPONSORED_ISOLATED",
+        "treasuryRef": "treasury_opaque_1",
+        "agentId": "agent_buyer_1",
+        "runtimeId": "runtime_cli_1",
+        "runtimeCapabilityDigest": "sha256:1212121212121212121212121212121212121212121212121212121212121212",
+        "buyerActorRef": "agent_buyer_1",
+        "mandateId": "mandate_payment_1",
+        "mandateVersion": 3,
+        "challengeDigest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+        "skuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "sellerIdentityRef": "seller_acme",
+        "payerAddress": "0x2222222222222222222222222222222222222222",
+        "payoutAddress": "0x1111111111111111111111111111111111111111",
+        "asset": {
+          "network": "eip155:8453",
+          "namespace": "erc20",
+          "reference": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          "symbol": "USDC",
+          "decimals": 6
+        },
+        "amountAtomic": "100000",
+        "mode": "HOSTED",
+        "requestedAssurance": {
+          "authorization": "MANDATE_PROTECTED",
+          "settlement": "FINALITY_VERIFIED",
+          "delivery": "HOSTED_RECOVERABLE",
+          "contentCustody": "HOSTED_ENCRYPTED_BUFFER",
+          "identity": "VERIFIED_SELLER"
+        },
+        "facilitatorId": "facilitator_0xkey_1",
+        "idempotencyKey": "payment-intent-weather-0001",
+        "fingerprintDigest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "state": "SETTLEMENT_UNKNOWN",
+        "reservationId": "reservation_1",
+        "authorizationDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "unknownObservationProofDigest": "sha256:abababababababababababababababababababababababababababababababab",
+        "reconciliationDeadline": "2026-08-10T00:20:00Z",
+        "createdAt": "2026-08-10T00:00:00Z",
+        "expiresAt": "2026-08-10T00:05:00Z"
+      }
+    },
+    {
+      "definition": "paymentIntent",
+      "value": {
+        "objectType": "PaymentIntent",
+        "protocolVersion": "0.1",
+        "paymentIntentId": "payment_intent_external_wallet_1",
+        "fundingLedgerNamespace": "external_wallet_funding_1",
+        "fundingAuthority": {"issuer": "wallet_eip155_8453_2222222222222222222222222222222222222222", "keyId": "wallet_key_2222"},
+        "settlementAuthority": {"issuer": "zero_x_key_facilitator", "keyId": "key_settlement_1"},
+        "observationAuthority": {"issuer": "zero_x_key", "keyId": "key_observation_1"},
+        "invocationId": "invocation_weather_external_1",
+        "buyerActorRef": "wallet_eip155_8453_2222222222222222222222222222222222222222",
+        "challengeDigest": "sha256:8989898989898989898989898989898989898989898989898989898989898989",
+        "skuVersionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "sellerIdentityRef": "seller_acme",
+        "payerAddress": "0x2222222222222222222222222222222222222222",
+        "payoutAddress": "0x1111111111111111111111111111111111111111",
+        "asset": {
+          "network": "eip155:8453",
+          "namespace": "erc20",
+          "reference": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          "symbol": "USDC",
+          "decimals": 6
+        },
+        "amountAtomic": "100000",
+        "mode": "HOSTED",
+        "requestedAssurance": {
+          "authorization": "WALLET_SIGNED",
+          "settlement": "FINALITY_VERIFIED",
+          "delivery": "HOSTED_RECOVERABLE",
+          "contentCustody": "HOSTED_ENCRYPTED_BUFFER",
+          "identity": "ANONYMOUS_WALLET"
+        },
+        "facilitatorId": "facilitator_0xkey_1",
+        "idempotencyKey": "payment-intent-external-wallet-0001",
+        "fingerprintDigest": "sha256:9191919191919191919191919191919191919191919191919191919191919191",
+        "state": "AUTHORIZED",
+        "authorizationDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "createdAt": "2026-08-10T00:00:00Z",
+        "expiresAt": "2026-08-10T00:05:00Z"
+      }
+    },
+    {
+      "definition": "artifactManifest",
+      "value": {
+        "objectType": "ArtifactManifest",
+        "protocolVersion": "0.1",
+        "artifactId": "artifact_weather_1",
+        "mediaType": "application/octet-stream",
+        "bytes": 10485760,
+        "contentDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "definition": "deliveryAcknowledgement",
+      "value": {
+        "objectType": "DeliveryAcknowledgement",
+        "protocolVersion": "0.1",
+        "acknowledgementId": "acknowledgement_1",
+        "invocationId": "invocation_weather_1",
+        "buyerActorRef": "agent_buyer_1",
+        "deliveryReceiptDigest": "sha256:8080808080808080808080808080808080808080808080808080808080808080",
+        "contentKind": "RESPONSE",
+        "receivedContentDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "receivedAt": "2026-08-10T00:10:00Z",
+        "attestation": {
+          "scheme": "DETACHED_JWS_EDDSA",
+          "issuer": "agent_buyer_1",
+          "keyId": "key_acceptance_1",
+          "signedObjectDigest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "signature": "eyJhbGciOiJFZERTQSJ9..acceptance_signature_1"
+        }
+      }
+    }
+  ]
+}
