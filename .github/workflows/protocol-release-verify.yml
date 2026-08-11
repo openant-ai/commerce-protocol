@@ -14,7 +14,37 @@ permissions:
   attestations: write
 
 jobs:
-  rebuild:
+  workspace-archive:
+    runs-on: macos-14
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.3.0
+      - name: Verify the archive builder matrix
+        run: |
+          test "$(node --version)" = v24.3.0
+          test "$(npm --version)" = 11.4.2
+          test "$(node -p 'process.versions.zlib')" = 1.2.12
+      - name: Rebuild the accepted workspace archive byte-for-byte
+        run: |
+          mkdir -p "$RUNNER_TEMP/release-assets"
+          npm pack --silent --pack-destination "$RUNNER_TEMP/release-assets"
+          echo "7a4feabe1cdc55804f4333c13f4550a39ce4570c1ce754e1b30c2d9c5e23b797  $RUNNER_TEMP/release-assets/openant-commerce-protocol-workspace-0.1.0-draft.4.tgz" | shasum -a 256 -c
+      - name: Attest the rebuilt workspace archive
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: ${{ runner.temp }}/release-assets/*
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: commerce-protocol-${{ inputs.tag }}-workspace-archive
+          if-no-files-found: error
+          path: ${{ runner.temp }}/release-assets/*
+
+  consumer-packages:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -23,7 +53,7 @@ jobs:
           ref: ${{ inputs.tag }}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: "20"
+          node-version: 20.20.2
           cache: npm
           cache-dependency-path: |
             package-lock.json
@@ -36,13 +66,9 @@ jobs:
           npm --prefix packages/protocol ci
       - name: Test the immutable protocol source
         run: npm test
-      - name: Rebuild the accepted workspace archive
-        run: |
-          mkdir -p "$RUNNER_TEMP/release-assets"
-          npm pack --silent --pack-destination "$RUNNER_TEMP/release-assets"
-          echo "7a4feabe1cdc55804f4333c13f4550a39ce4570c1ce754e1b30c2d9c5e23b797  $RUNNER_TEMP/release-assets/openant-commerce-protocol-workspace-0.1.0-draft.4.tgz" | sha256sum -c -
       - name: Rebuild the consumer npm package
         run: |
+          mkdir -p "$RUNNER_TEMP/release-assets"
           npm --prefix packages/protocol run build
           npm --prefix packages/protocol pack --silent --pack-destination "$RUNNER_TEMP/release-assets"
           echo "d8233ae9f88750f38c226d2c0f72b17cedcdd34cbb5a9817e39989da53764053  $RUNNER_TEMP/release-assets/openant-commerce-protocol-0.1.0-draft.4.tgz" | sha256sum -c -
@@ -52,12 +78,12 @@ jobs:
           cargo package --locked --manifest-path packages/verifier/Cargo.toml --no-verify
           cp packages/verifier/target/package/openant-commerce-verifier-0.1.0-draft.4.crate "$RUNNER_TEMP/release-assets/"
           echo "574c34690ab42ff7355dae97eb4a797c00818dda6a3e34f84efd93e6b0ba7bb8  $RUNNER_TEMP/release-assets/openant-commerce-verifier-0.1.0-draft.4.crate" | sha256sum -c -
-      - name: Attest rebuilt release packages
+      - name: Attest rebuilt consumer packages
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: ${{ runner.temp }}/release-assets/*
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: commerce-protocol-${{ inputs.tag }}-reproducible-packages
+          name: commerce-protocol-${{ inputs.tag }}-consumer-packages
           if-no-files-found: error
           path: ${{ runner.temp }}/release-assets/*
