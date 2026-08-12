@@ -172,6 +172,13 @@ export function validateTrustSnapshot({ body, trustAnchor, observedAt, previous,
     snapshot.capabilities?.containsTenantCredentials !== false
     || snapshot.capabilities?.mintsCommerceAuthority !== false
   ) fail("AUTHORITY_FORBIDDEN", "trust metadata cannot contain tenant authority");
+  requireExactKeys(snapshot.cache, ["maxAgeSeconds", "mustRevalidate"], "SCHEMA_INVALID");
+  if (
+    !Number.isSafeInteger(snapshot.cache.maxAgeSeconds)
+    || snapshot.cache.maxAgeSeconds < 0
+    || snapshot.cache.maxAgeSeconds > 300
+    || snapshot.cache.mustRevalidate !== true
+  ) fail("SCHEMA_INVALID", "snapshot cache policy is invalid or unbounded");
   requireExactKeys(snapshot.sourceArtifact, ["commit", "artifactSha256"], "SCHEMA_INVALID");
   if (
     snapshot.sourceArtifact.commit !== "f1cd81d977717986eaad741d22fc84ad1b380f70"
@@ -202,10 +209,11 @@ export function validateTrustSnapshot({ body, trustAnchor, observedAt, previous,
   const expiresAtMs = parseInstant(snapshot.expiresAt, "SCHEMA_INVALID");
   if (generatedAtMs > observedAtMs) fail("FUTURE_SNAPSHOT", "snapshot is future-dated");
   if (expiresAtMs <= generatedAtMs || observedAtMs >= expiresAtMs) fail("EXPIRED", "snapshot is expired");
-  if (maxCacheAgeSeconds !== undefined) {
-    if (!Number.isSafeInteger(maxCacheAgeSeconds) || maxCacheAgeSeconds < 0) fail("SCHEMA_INVALID", "cache bound is invalid");
-    if (observedAtMs - generatedAtMs > maxCacheAgeSeconds * 1000) fail("STALE", "snapshot exceeds caller freshness policy");
+  const freshnessBound = maxCacheAgeSeconds ?? snapshot.cache.maxAgeSeconds;
+  if (!Number.isSafeInteger(freshnessBound) || freshnessBound < 0 || freshnessBound > snapshot.cache.maxAgeSeconds) {
+    fail("SCHEMA_INVALID", "caller cache bound must not widen the signed freshness policy");
   }
+  if (observedAtMs - generatedAtMs > freshnessBound * 1000) fail("STALE", "snapshot exceeds bounded freshness policy");
 
   const digest = verifyRootSignature(snapshot, trustAnchor, observedAtMs);
   if (previous !== undefined) {

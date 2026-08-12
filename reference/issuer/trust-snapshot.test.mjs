@@ -84,7 +84,7 @@ test("consumer validates current and overlap keys but fails closed on trust faul
 
   const cases = [
     ["EXPIRED", { observedAt: "2026-09-13T00:00:01Z" }],
-    ["STALE", { observedAt: "2026-08-14T00:10:01Z", maxCacheAgeSeconds: 600 }],
+    ["STALE", { observedAt: "2026-08-14T00:10:01Z", maxCacheAgeSeconds: 300 }],
     ["ROLLBACK", { previous: { version: 3, digest: "sha256:" + "aa".repeat(32) } }],
     ["UNKNOWN_KID", { trustAnchor: { ...corpus.trustAnchor, kid: "unknown_root" } }],
     ["ROOT_KEY_INACTIVE", { trustAnchor: { ...corpus.trustAnchor, revokedAtUnixMs: Date.parse("2026-08-13T23:59:30Z") } }],
@@ -121,6 +121,11 @@ test("consumer validates current and overlap keys but fails closed on trust faul
     observedAt: "2026-08-14T00:00:00Z",
     previous: { version: 2, digest: "sha256:" + "bb".repeat(32) },
   }), (error) => error.code === "VERSION_FORK");
+  assert.throws(() => validateTrustSnapshot({
+    body: corpus.canonicalSnapshot,
+    trustAnchor: corpus.trustAnchor,
+    observedAt: "2026-08-14T00:04:01Z",
+  }), (error) => error.code === "STALE", "signed cache.maxAgeSeconds is the default freshness bound");
 });
 
 test("snapshot is verify-only metadata and cannot upgrade standard x402", () => {
