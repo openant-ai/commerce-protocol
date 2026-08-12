@@ -187,11 +187,13 @@ test("version continuity permits only exact replay or the exact next link", () =
     observedAt: "2026-08-14T00:00:00Z",
     previous: { version: 2, digest },
   }).decision, "ACCEPTED");
+  const gap = signedCandidate((snapshot) => {
+    snapshot.snapshotVersion = 4;
+  });
   assert.throws(() => validateTrustSnapshot({
-    body: corpus.canonicalSnapshot,
-    trustAnchor: corpus.trustAnchor,
+    ...gap,
     observedAt: "2026-08-14T00:00:00Z",
-    previous: { version: 0, digest: corpus.previousSnapshotDigest },
+    previous: { version: 1, digest: corpus.previousSnapshotDigest },
   }), (error) => error.code === "VERSION_GAP");
   assert.throws(() => validateTrustSnapshot({
     body: corpus.canonicalSnapshot,
@@ -278,8 +280,8 @@ test("snapshot is verify-only metadata and cannot upgrade standard x402", () => 
     kid: "trust_snapshot_root_2026_08",
     etag: '"sha256:c2bc504de781106fcbb9edc1f3e13a9d74bce532eb20adb698fbcbd1b754fe04"',
     accepted: ["CURRENT_KEY", "OVERLAP_ROTATION"],
-    rejected: ["EMPTY_SNAPSHOT", "EXPIRED", "NON_CANONICAL", "REVOKED_ROOT", "ROLLBACK", "SIGNATURE_TAMPER", "STALE", "UNKNOWN_KID", "VERSION_FORK"],
-    http: ["GET_200", "HEAD_200", "IF_NONE_MATCH_304", "METHOD_405", "QUERY_404"],
+    rejected: ["EMPTY_SNAPSHOT", "EXPIRED", "INACTIVE_REFERENCED_CHALLENGE_KEY", "INACTIVE_REFERENCED_LISTING_KEY", "MALFORMED_TRUST_ANCHOR", "NESTED_EXTRA_FIELD", "NON_CANONICAL", "PRIVATE_OR_NON_CANONICAL_JWK", "REVOKED_ROOT", "ROLLBACK", "SIGNATURE_TAMPER", "STALE", "UNKNOWN_KID", "VERSION_GAP", "VERSION_FORK"],
+    http: ["GET_200", "HEAD_200", "IF_NONE_MATCH_304", "IF_NONE_MATCH_CASE_INSENSITIVE", "METHOD_405", "QUERY_404"],
     privacy: ["NO_BEARER", "NO_BUSINESS_BODY", "NO_PRIVATE_JWK", "NO_TENANT_CREDENTIAL", "NO_MANDATE_ASSURANCE"],
     authority: "PUBLIC_TRUST_METADATA_ONLY",
   });

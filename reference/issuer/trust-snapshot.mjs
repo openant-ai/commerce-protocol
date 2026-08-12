@@ -4,16 +4,55 @@ import {
   verify as cryptoVerify,
 } from "node:crypto";
 import { readFileSync } from "node:fs";
+import Ajv2020 from "ajv/dist/2020.js";
 
 import { canonicalJson } from "../canonical.mjs";
 
 export const SNAPSHOT_PATH = "/v1/trust-snapshots/current";
 const PROFILE = "OPENANT_TRUST_SNAPSHOT";
 const WIRE_VERSION = "0.1";
+const IDENTIFIER = /^[a-z][a-z0-9]*(?:[_:-][a-zA-Z0-9]+)+$/;
+const SHA256_DIGEST = /^sha256:[0-9a-f]{64}$/;
 const corpus = JSON.parse(readFileSync(
   new URL("../../vectors/openant-trust-snapshot-v1.json", import.meta.url),
   "utf8",
 ));
+const commerceSchema = JSON.parse(readFileSync(
+  new URL("../../schemas/commerce-0.1.schema.json", import.meta.url),
+  "utf8",
+));
+const ajv = new Ajv2020({
+  allErrors: true,
+  strictSchema: true,
+  strictTypes: false,
+  validateFormats: true,
+});
+ajv.addFormat("uint256-decimal", {
+  type: "string",
+  validate(value) {
+    if (!/^(0|[1-9][0-9]*)$/.test(value)) return false;
+    try {
+      return BigInt(value) <= (1n << 256n) - 1n;
+    } catch {
+      return false;
+    }
+  },
+});
+ajv.addFormat("rfc3339-utc-whole-seconds", {
+  type: "string",
+  validate(value) {
+    if (!/^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])T([01]\d|2[0-3]):[0-5]\d:[0-5]\dZ$/.test(value)) {
+      return false;
+    }
+    const epochMillis = Date.parse(value);
+    return Number.isFinite(epochMillis)
+      && new Date(epochMillis).toISOString().replace(".000Z", "Z") === value;
+  },
+});
+ajv.addSchema(commerceSchema);
+const validateListingMandate = ajv.compile({
+  $ref: `${commerceSchema.$id}#/$defs/listingMandate`,
+});
 
 export class TrustSnapshotError extends Error {
   constructor(code, message, retryable = false) {
@@ -58,7 +97,55 @@ function requireExactKeys(value, names, code) {
   }
 }
 
+function validateVerifyOnlyEd25519Jwk(jwk, code) {
+  requireExactKeys(jwk, ["kty", "crv", "use", "key_ops", "x"], code);
+  if (
+    jwk.kty !== "OKP"
+    || jwk.crv !== "Ed25519"
+    || jwk.use !== "sig"
+    || canonicalJson(jwk.key_ops) !== '["verify"]'
+    || typeof jwk.x !== "string"
+    || !/^[A-Za-z0-9_-]{43}$/.test(jwk.x)
+  ) fail(code, "JWK is not canonical verify-only Ed25519 material");
+  let decoded;
+  try {
+    decoded = Buffer.from(jwk.x, "base64url");
+  } catch {
+    fail(code, "JWK x is not canonical base64url");
+  }
+  if (decoded.length !== 32 || decoded.toString("base64url") !== jwk.x) {
+    fail(code, "JWK x must be canonical base64url for exactly 32 bytes");
+  }
+}
+
+function validateKeyLifecycle(key, code) {
+  if (
+    typeof key.issuer !== "string" || !IDENTIFIER.test(key.issuer)
+    || typeof key.kid !== "string" || !IDENTIFIER.test(key.kid)
+    || key.role !== "ISSUER" || key.algorithm !== "EdDSA"
+    || !Number.isSafeInteger(key.notBeforeUnixMs) || key.notBeforeUnixMs < 0
+    || (key.notAfterUnixMs !== null && (
+      !Number.isSafeInteger(key.notAfterUnixMs) || key.notAfterUnixMs <= key.notBeforeUnixMs
+    ))
+    || (key.revokedAtUnixMs !== null && (
+      !Number.isSafeInteger(key.revokedAtUnixMs)
+      || key.revokedAtUnixMs < key.notBeforeUnixMs
+      || (key.notAfterUnixMs !== null && key.revokedAtUnixMs > key.notAfterUnixMs)
+    ))
+  ) fail(code, "key identity, type, or lifecycle ordering is invalid");
+  validateVerifyOnlyEd25519Jwk(key.jwk, code);
+}
+
+function validateTrustAnchor(trustAnchor) {
+  requireExactKeys(trustAnchor, [
+    "issuer", "kid", "role", "algorithm", "notBeforeUnixMs", "notAfterUnixMs",
+    "revokedAtUnixMs", "jwk",
+  ], "TRUST_ANCHOR_INVALID");
+  validateKeyLifecycle(trustAnchor, "TRUST_ANCHOR_INVALID");
+}
+
 function verifyRootSignature(snapshot, trustAnchor, observedAtMs) {
+  validateTrustAnchor(trustAnchor);
   const envelope = snapshot.signature;
   requireExactKeys(envelope, ["scheme", "issuer", "keyId", "signedObjectDigest", "signature"], "SIGNATURE_INVALID");
   if (
@@ -125,28 +212,18 @@ function validateVerificationKeys(keys, observedAtMs) {
       "issuer", "kid", "role", "algorithm", "notBeforeUnixMs", "notAfterUnixMs",
       "revokedAtUnixMs", "jwk",
     ], "KEY_INVALID");
+    validateKeyLifecycle(key, "KEY_INVALID");
     const identity = `${key.issuer}\0${key.kid}\0${key.role}`;
     if (identities.has(identity)) fail("KEY_INVALID", "duplicate verification key identity");
     identities.add(identity);
     if (
-      key.role !== "ISSUER" || key.algorithm !== "EdDSA"
-      || key.jwk?.kty !== "OKP" || key.jwk?.crv !== "Ed25519"
-      || key.jwk?.use !== "sig" || canonicalJson(key.jwk?.key_ops) !== '["verify"]'
-      || typeof key.jwk?.x !== "string" || Object.hasOwn(key.jwk, "d")
-    ) fail("KEY_INVALID", "verification key is not verify-only Ed25519 material");
-    if (!Number.isSafeInteger(key.notBeforeUnixMs)) fail("KEY_INVALID", "key activation is invalid");
-    if (key.notAfterUnixMs !== null && (!Number.isSafeInteger(key.notAfterUnixMs) || key.notAfterUnixMs <= key.notBeforeUnixMs)) {
-      fail("KEY_INVALID", "key expiry is invalid");
-    }
-    if (key.revokedAtUnixMs !== null && !Number.isSafeInteger(key.revokedAtUnixMs)) fail("KEY_INVALID", "key revocation is invalid");
-    if (
       observedAtMs >= key.notBeforeUnixMs
       && (key.notAfterUnixMs === null || observedAtMs < key.notAfterUnixMs)
       && (key.revokedAtUnixMs === null || observedAtMs < key.revokedAtUnixMs)
-    ) active.push(key.kid);
+    ) active.push({ identity: `${key.issuer}\0${key.kid}`, kid: key.kid });
   }
   if (active.length === 0) fail("EMPTY_KEYS", "snapshot has no active verification key");
-  return active.sort();
+  return active;
 }
 
 export function validateTrustSnapshot({ body, trustAnchor, observedAt, previous, maxCacheAgeSeconds }) {
@@ -163,6 +240,7 @@ export function validateTrustSnapshot({ body, trustAnchor, observedAt, previous,
     "generatedAt", "expiresAt", "cache", "capabilities", "sourceArtifact",
     "verificationKeys", "listingMandates", "catalogRoots", "signature",
   ], "SCHEMA_INVALID");
+  requireExactKeys(snapshot.capabilities, ["containsTenantCredentials", "mintsCommerceAuthority"], "SCHEMA_INVALID");
   if (
     snapshot.objectType !== "OpenAntTrustSnapshot" || snapshot.protocolVersion !== WIRE_VERSION
     || snapshot.issuer !== "openant_trust" || !Number.isSafeInteger(snapshot.snapshotVersion)
@@ -197,11 +275,12 @@ export function validateTrustSnapshot({ body, trustAnchor, observedAt, previous,
     fail("LISTING_EMPTY", "snapshot has no ListingMandate");
   }
   for (const listing of snapshot.listingMandates) {
-    if (
-      listing?.objectType !== "ListingMandate"
-      || listing.skuVersionDigest !== snapshot.catalogRoots.serviceSkuVersionDigest
-      || typeof listing.signature?.signedObjectDigest !== "string"
-    ) fail("LISTING_INVALID", "ListingMandate does not bind the published SKU root");
+    if (!validateListingMandate(listing)) {
+      fail("LISTING_INVALID", "ListingMandate does not satisfy the strict Commerce schema");
+    }
+    if (listing.skuVersionDigest !== snapshot.catalogRoots.serviceSkuVersionDigest) {
+      fail("LISTING_INVALID", "ListingMandate does not bind the published SKU root");
+    }
   }
 
   const observedAtMs = parseInstant(observedAt, "CLOCK_INVALID");
@@ -217,22 +296,35 @@ export function validateTrustSnapshot({ body, trustAnchor, observedAt, previous,
 
   const digest = verifyRootSignature(snapshot, trustAnchor, observedAtMs);
   if (previous !== undefined) {
-    if (!Number.isSafeInteger(previous.version) || typeof previous.digest !== "string") fail("SCHEMA_INVALID", "previous coordinate is invalid");
+    requireExactKeys(previous, ["version", "digest"], "SCHEMA_INVALID");
+    if (!Number.isSafeInteger(previous.version) || previous.version < 1 || typeof previous.digest !== "string" || !SHA256_DIGEST.test(previous.digest)) {
+      fail("SCHEMA_INVALID", "previous coordinate is invalid");
+    }
     if (snapshot.snapshotVersion < previous.version) fail("ROLLBACK", "snapshot version rolled back");
     if (snapshot.snapshotVersion === previous.version && digest !== previous.digest) fail("VERSION_FORK", "same snapshot version has different digest");
-    if (snapshot.snapshotVersion === previous.version + 1 && snapshot.previousSnapshotDigest !== previous.digest) {
-      fail("CHAIN_MISMATCH", "snapshot does not extend the accepted coordinate");
+    if (snapshot.snapshotVersion > previous.version) {
+      if (snapshot.snapshotVersion !== previous.version + 1) fail("VERSION_GAP", "snapshot skipped a version");
+      if (snapshot.previousSnapshotDigest !== previous.digest) {
+        fail("CHAIN_MISMATCH", "snapshot does not extend the accepted coordinate");
+      }
     }
   }
-  const activeKeyIds = validateVerificationKeys(snapshot.verificationKeys, observedAtMs);
+  const activeKeys = validateVerificationKeys(snapshot.verificationKeys, observedAtMs);
+  const activeIdentities = new Set(activeKeys.map((key) => key.identity));
   const knownKeys = new Set(snapshot.verificationKeys.map((key) => `${key.issuer}\0${key.kid}`));
   for (const listing of snapshot.listingMandates) {
-    if (!knownKeys.has(`${listing.signature.issuer}\0${listing.signature.keyId}`)) {
+    const listingSigner = `${listing.signature.issuer}\0${listing.signature.keyId}`;
+    if (!knownKeys.has(listingSigner)) {
       fail("LISTING_KEY_UNKNOWN", "Listing signer is absent from verification keys");
     }
+    if (!activeIdentities.has(listingSigner)) fail("LISTING_KEY_INACTIVE", "Listing signer is inactive");
     for (const authorized of listing.authorizedChallengeIssuers ?? []) {
-      if (!knownKeys.has(`${authorized.issuer}\0${authorized.keyId}`)) {
+      const challengeSigner = `${authorized.issuer}\0${authorized.keyId}`;
+      if (!knownKeys.has(challengeSigner)) {
         fail("CHALLENGE_KEY_UNKNOWN", "authorized Challenge signer is absent from verification keys");
+      }
+      if (!activeIdentities.has(challengeSigner)) {
+        fail("CHALLENGE_KEY_INACTIVE", "authorized Challenge signer is inactive");
       }
     }
   }
@@ -243,7 +335,7 @@ export function validateTrustSnapshot({ body, trustAnchor, observedAt, previous,
     version: snapshot.snapshotVersion,
     issuer: snapshot.issuer,
     kid: snapshot.signature.keyId,
-    activeKeyIds,
+    activeKeyIds: activeKeys.map((key) => key.kid).sort(),
   });
 }
 
@@ -266,7 +358,7 @@ function traceId(traceparent) {
   return match?.[1] ?? null;
 }
 
-function headers() {
+function entityHeaders() {
   return {
     "cache-control": "public, max-age=300, must-revalidate",
     "content-type": "application/json; charset=utf-8",
@@ -275,10 +367,17 @@ function headers() {
   };
 }
 
-function response(status, body, decision, request) {
+function cacheHeaders() {
+  return {
+    "cache-control": "public, max-age=300, must-revalidate",
+    etag: corpus.etag,
+  };
+}
+
+function response(status, headers, body, decision, request) {
   return {
     status,
-    headers: headers(),
+    headers,
     body,
     observation: {
       event: "trust_snapshot.request_completed",
@@ -295,10 +394,21 @@ function response(status, body, decision, request) {
 }
 
 export function handleTrustSnapshotRequest(request) {
-  if (request?.path !== SNAPSHOT_PATH) return response(404, "", "NOT_FOUND", request ?? {});
-  if (request.method !== "GET" && request.method !== "HEAD") return response(405, "", "METHOD_NOT_ALLOWED", request);
-  const requestHeaders = request.headers ?? {};
-  const match = requestHeaders["if-none-match"] ?? requestHeaders["If-None-Match"];
-  if (match === corpus.etag) return response(304, "", "NOT_MODIFIED", request);
-  return response(200, request.method === "HEAD" ? "" : corpus.canonicalSnapshot, "SERVED", request);
+  if (request?.path !== SNAPSHOT_PATH) return response(404, {}, "", "NOT_FOUND", request ?? {});
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return response(405, { allow: "GET, HEAD" }, "", "METHOD_NOT_ALLOWED", request);
+  }
+  const requestHeaders = Object.fromEntries(
+    Object.entries(request.headers ?? {}).map(([name, value]) => [name.toLowerCase(), value]),
+  );
+  if (requestHeaders["if-none-match"] === corpus.etag) {
+    return response(304, cacheHeaders(), "", "NOT_MODIFIED", request);
+  }
+  return response(
+    200,
+    entityHeaders(),
+    request.method === "HEAD" ? "" : corpus.canonicalSnapshot,
+    "SERVED",
+    request,
+  );
 }

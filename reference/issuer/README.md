@@ -12,15 +12,17 @@ content length are fixed by `vectors/openant-trust-snapshot-v1.json`.
 
 `validateTrustSnapshot` is a fail-closed consumer oracle. It verifies canonical
 bytes, the independently signed snapshot digest, a caller-pinned public trust root,
-bounded freshness, expiry, monotonic version linkage, verify-only key lifecycle,
-Listing signer/Challenge signer availability, and immutable catalog roots. An HTTP
+bounded freshness, expiry, exact replay-or-next monotonic version linkage, exact
+verify-only key lifecycle, strict draft.4 Listing schema, active referenced Listing
+and Challenge signers, and immutable catalog roots. An HTTP
 200 is never sufficient authority. The result is trust metadata only; it cannot mint
 a Mandate proof, AppProof, Commerce authorization, Payment Rail, or assurance label.
 
 The only observation is a metadata event containing snapshot digest/version,
 issuer/kid, cache age, stable decision/retryability, and a validated W3C trace ID.
 It never records URL query, request headers, caller identity, tenant data, proof JSON,
-or commerce content.
+or commerce content. `304` returns only cache validators; `404` has no snapshot
+entity headers, and `405` exposes only `Allow: GET, HEAD`.
 
 Production publisher storage, deployment routing, availability SLOs, and monotonic
 publication fencing remain an integration gate outside this reference package.
