@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
+import { createHash, generateKeyPairSync, sign as cryptoSign } from "node:crypto";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
@@ -8,6 +8,7 @@ import {
   handleTrustSnapshotRequest,
   validateTrustSnapshot,
 } from "./trust-snapshot.mjs";
+import { canonicalJson } from "../canonical.mjs";
 
 const corpusUrl = new URL("../../vectors/openant-trust-snapshot-v1.json", import.meta.url);
 const corpus = JSON.parse(readFileSync(corpusUrl, "utf8"));
@@ -18,6 +19,56 @@ const report = JSON.parse(readFileSync(
 
 function get(headers = {}, traceparent = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01") {
   return handleTrustSnapshotRequest({ method: "GET", path: SNAPSHOT_PATH, headers, traceparent });
+}
+
+function signedCandidate(mutate = () => {}) {
+  const { privateKey, publicKey } = generateKeyPairSync("ed25519");
+  const trustAnchor = {
+    issuer: "openant_trust",
+    kid: "test_trust_root",
+    role: "ISSUER",
+    algorithm: "EdDSA",
+    notBeforeUnixMs: Date.parse("2026-08-01T00:00:00Z"),
+    notAfterUnixMs: Date.parse("2026-09-01T00:00:00Z"),
+    revokedAtUnixMs: null,
+    jwk: { ...publicKey.export({ format: "jwk" }), use: "sig", key_ops: ["verify"] },
+  };
+  const snapshot = structuredClone(corpus.snapshot);
+  snapshot.signature.issuer = trustAnchor.issuer;
+  snapshot.signature.keyId = trustAnchor.kid;
+  mutate(snapshot, trustAnchor);
+  const preimage = structuredClone(snapshot);
+  delete preimage.signature;
+  const frame = Buffer.concat([
+    Buffer.from("openant-commerce\0"),
+    Buffer.from("0.1\0"),
+    Buffer.from("OPENANT_TRUST_SNAPSHOT\0"),
+    Buffer.from(canonicalJson(preimage)),
+  ]);
+  snapshot.signature.signedObjectDigest = `sha256:${createHash("sha256").update(frame).digest("hex")}`;
+  const header = {
+    alg: "EdDSA",
+    aud: "openant:trust_snapshot",
+    iss: snapshot.signature.issuer,
+    kid: snapshot.signature.keyId,
+    typ: "openant-commerce+jws",
+  };
+  const protectedHeader = Buffer.from(canonicalJson(header)).toString("base64url");
+  const payload = Buffer.from(snapshot.signature.signedObjectDigest).toString("base64url");
+  snapshot.signature.signature = `${protectedHeader}..${cryptoSign(
+    null,
+    Buffer.from(`${protectedHeader}.${payload}`),
+    privateKey,
+  ).toString("base64url")}`;
+  return { body: canonicalJson(snapshot), trustAnchor };
+}
+
+function rejectSigned(mutate, code) {
+  const candidate = signedCandidate(mutate);
+  assert.throws(() => validateTrustSnapshot({
+    ...candidate,
+    observedAt: "2026-08-14T00:00:00Z",
+  }), (error) => error.code === code, code);
 }
 
 test("GET publishes byte-identical signed metadata with deterministic cache headers", () => {
@@ -57,6 +108,8 @@ test("HEAD and If-None-Match preserve the immutable coordinate without a body", 
   assert.equal(notModified.status, 304);
   assert.equal(notModified.body, "");
   assert.equal(notModified.headers.etag, corpus.etag);
+  assert.deepEqual(Object.keys(notModified.headers).sort(), ["cache-control", "etag"]);
+  assert.equal(get({ "iF-NoNe-MaTcH": corpus.etag }).status, 304);
 });
 
 test("the endpoint has no caller-selected trust, tenant, query, proof, or write seam", () => {
@@ -69,7 +122,83 @@ test("the endpoint has no caller-selected trust, tenant, query, proof, or write 
     assert.equal(response.status, request.method === "POST" ? 405 : 404);
     assert.equal(response.body, "");
     assert.equal(JSON.stringify(response).includes("secret"), false);
+    assert.equal(Object.hasOwn(response.headers, "etag"), false);
+    assert.equal(Object.hasOwn(response.headers, "content-type"), false);
+    if (response.status === 405) assert.equal(response.headers.allow, "GET, HEAD");
   }
+});
+
+test("rejects malformed trust anchors before cryptographic use", () => {
+  for (const [name, mutate] of [
+    ["extra field", (anchor) => { anchor.tenantCredential = "secret"; }],
+    ["wrong type", (anchor) => { anchor.notBeforeUnixMs = "1785542400000"; }],
+    ["inverted lifecycle", (anchor) => { anchor.notAfterUnixMs = anchor.notBeforeUnixMs; }],
+    ["revocation before activation", (anchor) => { anchor.revokedAtUnixMs = anchor.notBeforeUnixMs - 1; }],
+    ["private JWK", (anchor) => { anchor.jwk.d = "AA"; }],
+    ["extra JWK field", (anchor) => { anchor.jwk.alg = "EdDSA"; }],
+    ["non-canonical x", (anchor) => { anchor.jwk.x += "="; }],
+    ["wrong x length", (anchor) => { anchor.jwk.x = "AA"; }],
+  ]) {
+    const anchor = structuredClone(corpus.trustAnchor);
+    mutate(anchor);
+    assert.throws(() => validateTrustSnapshot({
+      body: corpus.canonicalSnapshot,
+      trustAnchor: anchor,
+      observedAt: "2026-08-14T00:00:00Z",
+    }), (error) => error.code === "TRUST_ANCHOR_INVALID", name);
+  }
+});
+
+test("signed nested metadata uses closed schemas and canonical verify-only JWKs", () => {
+  rejectSigned((snapshot) => { snapshot.capabilities.tenantCredential = "secret"; }, "SCHEMA_INVALID");
+  rejectSigned((snapshot) => { snapshot.listingMandates[0].privateKey = "secret"; }, "LISTING_INVALID");
+  rejectSigned((snapshot) => { snapshot.listingMandates[0].signature.privateKey = "secret"; }, "LISTING_INVALID");
+  rejectSigned((snapshot) => { snapshot.listingMandates[0].authorizedChallengeIssuers[0].tenant = "secret"; }, "LISTING_INVALID");
+  rejectSigned((snapshot) => { snapshot.verificationKeys[0].jwk.alg = "EdDSA"; }, "KEY_INVALID");
+  rejectSigned((snapshot) => { snapshot.verificationKeys[0].jwk.d = "AA"; }, "KEY_INVALID");
+  rejectSigned((snapshot) => { snapshot.verificationKeys[0].jwk.x += "="; }, "KEY_INVALID");
+  rejectSigned((snapshot) => { snapshot.verificationKeys[0].jwk.x = "AA"; }, "KEY_INVALID");
+});
+
+test("every signer referenced by a Listing is active at observedAt", () => {
+  rejectSigned((snapshot) => {
+    snapshot.verificationKeys.find((key) => key.kid === "listing_key_2026_08").revokedAtUnixMs =
+      Date.parse("2026-08-13T23:59:59Z");
+  }, "LISTING_KEY_INACTIVE");
+  rejectSigned((snapshot) => {
+    snapshot.verificationKeys.find((key) => key.kid === "challenge_key_2026_08").notAfterUnixMs =
+      Date.parse("2026-08-14T00:00:00Z");
+  }, "CHALLENGE_KEY_INACTIVE");
+  const accepted = signedCandidate((snapshot) => {
+    snapshot.verificationKeys.find((key) => key.kid === "challenge_key_2026_07").notAfterUnixMs =
+      Date.parse("2026-08-14T00:00:00Z");
+  });
+  assert.equal(validateTrustSnapshot({
+    ...accepted,
+    observedAt: "2026-08-14T00:00:00Z",
+  }).decision, "ACCEPTED", "an unreferenced previous overlap key may be retired");
+});
+
+test("version continuity permits only exact replay or the exact next link", () => {
+  const digest = corpus.snapshot.signature.signedObjectDigest;
+  assert.equal(validateTrustSnapshot({
+    body: corpus.canonicalSnapshot,
+    trustAnchor: corpus.trustAnchor,
+    observedAt: "2026-08-14T00:00:00Z",
+    previous: { version: 2, digest },
+  }).decision, "ACCEPTED");
+  assert.throws(() => validateTrustSnapshot({
+    body: corpus.canonicalSnapshot,
+    trustAnchor: corpus.trustAnchor,
+    observedAt: "2026-08-14T00:00:00Z",
+    previous: { version: 0, digest: corpus.previousSnapshotDigest },
+  }), (error) => error.code === "VERSION_GAP");
+  assert.throws(() => validateTrustSnapshot({
+    body: corpus.canonicalSnapshot,
+    trustAnchor: corpus.trustAnchor,
+    observedAt: "2026-08-14T00:00:00Z",
+    previous: { version: 1, digest: "sha256:" + "cc".repeat(32) },
+  }), (error) => error.code === "CHAIN_MISMATCH");
 });
 
 test("consumer validates current and overlap keys but fails closed on trust faults", () => {
