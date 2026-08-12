@@ -5,7 +5,9 @@ Fail-closed Rust verification core for OpenAnt Commerce Protocol 0.1 proofs.
 ## Public seam
 
 - `HistoricalKeyRegistry::verify_detached_jws` verifies strict detached ES256/Ed25519 JWS
-  against verifier-local issuer, role, activation, expiry, and revocation metadata.
+  against verifier-local issuer, role, activation, expiry, and revocation metadata. Callers
+  must choose a closed `StatementLifecycleField`: `IssuedAt` for issued statements or
+  `ValidFrom` for Listing mandates. Arbitrary wire-selected field names are impossible.
 - `HistoricalKeyRegistry::from_jwks` imports public RFC 7517 keys without allowing JWKS data
   to self-assert trust roles or lifecycle windows.
 - `verify_eip712_wallet` accepts only the fixed Base USDC x402 v2 exact EIP-3009
@@ -25,6 +27,9 @@ PaymentIntent-fingerprint-derived EIP-3009 nonce and the resolver's PaymentInten
 
 Activation is inclusive; expiry and revocation are exclusive upper bounds. Verification
 evaluates lifecycle policy at trusted observation time, never at signer-claimed `issuedAt`.
+The selected statement lifecycle time is only a future-dating guard; selecting `ValidFrom`
+does not validate `validUntil`, which remains an explicit adapter policy check. The retained
+`VerifiedJws.statement_issued_at_unix_ms` field reports that selected time for compatibility.
 The former raw caller-supplied historical-time-anchor bypass has been removed: until a
 cryptographically verifiable TSA or transparency-log proof is standardized, historical
 evaluation is unsupported and fails closed. Protocol timestamps and live observations are

@@ -24,3 +24,30 @@ rejection is itself an idempotent committed result.
 
 The fixtures contain metadata and digests only. They never contain request or
 response bodies, artifact bytes, credentials, or real-money capabilities.
+
+## Signed OpenAnt x402 Challenge
+
+`openant-x402-challenge-v1.json` is the additive draft.4 challenge/catalog resolution
+corpus. It carries a complete strict immutable `ServiceDefinitionVersion` →
+`OfferVersion` → `EndpointDescriptorVersion` → `ServiceSKUVersion` root plus a
+`ListingMandate` and `OpenAntX402Extension`. Both signed objects have real Ed25519
+detached JWS signatures. The artifact exposes verify-only JWKs with fixed `ISSUER`
+roles and lifecycle windows; it contains no signing secrets.
+
+The immutable signed literal was produced outside the repository under controlled
+release custody. Repository tests independently reproduce every structured digest,
+verify both signatures from public JWKs, and pin the exact artifact bytes:
+
+```console
+shasum -a 256 vectors/openant-x402-challenge-v1.json
+```
+
+The expected artifact SHA-256 is
+`cc45f2e5d3566c3756c522d20f9eb978d086256980af59957d780eda7699996e`.
+The conformance tests reject signed-field tampering, recompute all four catalog
+digests, enforce Listing/Challenge/catalog bindings, and reject URL, media type,
+operation, mode, amount, or payout mutation even while the original JWS remains valid.
+The selected `ValidFrom` lifecycle field does not check the upper bound: adapters must
+apply their trusted clock to `validUntil` and challenge `expiresAt` separately.
+Standard x402 without `extensions.openant` cannot become `MANDATE_PROTECTED`; this
+corpus also does not constitute a MandateAuthorizationProof or AppProof chain.

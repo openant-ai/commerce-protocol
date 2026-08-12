@@ -1,7 +1,7 @@
 use openant_commerce_verifier::{
     canonicalize_jcs, digest_structured, DigestBoundStatement, HistoricalJwk,
     HistoricalKeyRegistry, HistoricalKeyWindow, JwsAlgorithm, KeyRole, SignatureEnvelope,
-    SignatureScheme, VerificationContext, VerificationErrorCode,
+    SignatureScheme, StatementLifecycleField, VerificationContext, VerificationErrorCode,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -87,6 +87,7 @@ fn context_for<'a>(vectors: &'a JwsVectors, statement: &'a Value) -> Verificatio
             profile: &vectors.statement_profile,
             preimage: statement,
             wire_version: "0.1",
+            lifecycle_field: StatementLifecycleField::IssuedAt,
         },
     }
 }
