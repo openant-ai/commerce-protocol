@@ -1,0 +1,141 @@
+{
+  "id": "OPENANT.TRUST.SNAPSHOT.SIGNED.001",
+  "provenance": "reference-only immutable public trust metadata; not a production deployment URL or persistent publisher",
+  "trustAnchor": {
+    "issuer": "openant_trust",
+    "kid": "trust_snapshot_root_2026_08",
+    "role": "ISSUER",
+    "algorithm": "EdDSA",
+    "notBeforeUnixMs": 1785542400000,
+    "notAfterUnixMs": 1817078400000,
+    "revokedAtUnixMs": null,
+    "jwk": {
+      "kty": "OKP",
+      "crv": "Ed25519",
+      "use": "sig",
+      "key_ops": [
+        "verify"
+      ],
+      "x": "kIrPZaDMAEI6W8kP6qlpZatEugrGEp61d32SsQaJ1Lc"
+    }
+  },
+  "previousSnapshotDigest": "sha256:2b3a0ec838fe44c07633c22d7d683e01f7a22055659168ae36cf8853619df83c",
+  "snapshot": {
+    "objectType": "OpenAntTrustSnapshot",
+    "protocolVersion": "0.1",
+    "snapshotVersion": 2,
+    "previousSnapshotDigest": "sha256:2b3a0ec838fe44c07633c22d7d683e01f7a22055659168ae36cf8853619df83c",
+    "issuer": "openant_trust",
+    "generatedAt": "2026-08-13T23:59:00Z",
+    "expiresAt": "2026-09-13T00:00:00Z",
+    "cache": {
+      "maxAgeSeconds": 300,
+      "mustRevalidate": true
+    },
+    "capabilities": {
+      "containsTenantCredentials": false,
+      "mintsCommerceAuthority": false
+    },
+    "sourceArtifact": {
+      "commit": "f1cd81d977717986eaad741d22fc84ad1b380f70",
+      "artifactSha256": "cc45f2e5d3566c3756c522d20f9eb978d086256980af59957d780eda7699996e"
+    },
+    "verificationKeys": [
+      {
+        "issuer": "openant_gateway",
+        "kid": "challenge_key_2026_07",
+        "role": "ISSUER",
+        "algorithm": "EdDSA",
+        "notBeforeUnixMs": 1782864000000,
+        "notAfterUnixMs": 1787184000000,
+        "revokedAtUnixMs": null,
+        "jwk": {
+          "kty": "OKP",
+          "crv": "Ed25519",
+          "use": "sig",
+          "key_ops": [
+            "verify"
+          ],
+          "x": "SMG5tu10xzmvNYcuiv48yMz6G9JajgO3Sw_v-69v5xI"
+        }
+      },
+      {
+        "issuer": "seller_acme",
+        "kid": "listing_key_2026_08",
+        "role": "ISSUER",
+        "algorithm": "EdDSA",
+        "notBeforeUnixMs": 1735689600000,
+        "notAfterUnixMs": null,
+        "revokedAtUnixMs": null,
+        "jwk": {
+          "kty": "OKP",
+          "crv": "Ed25519",
+          "use": "sig",
+          "key_ops": [
+            "verify"
+          ],
+          "x": "b3LjUhM8JzPfUn1RrAszJP9HGDw_phr8UC9q5cmMjWE"
+        }
+      },
+      {
+        "issuer": "openant_gateway",
+        "kid": "challenge_key_2026_08",
+        "role": "ISSUER",
+        "algorithm": "EdDSA",
+        "notBeforeUnixMs": 1735689600000,
+        "notAfterUnixMs": null,
+        "revokedAtUnixMs": null,
+        "jwk": {
+          "kty": "OKP",
+          "crv": "Ed25519",
+          "use": "sig",
+          "key_ops": [
+            "verify"
+          ],
+          "x": "KLTAZpV7IjSZQIwd08e6WwTqNjV1hhZTh9aCk1XDSRI"
+        }
+      }
+    ],
+    "listingMandates": [
+      {
+        "objectType": "ListingMandate",
+        "protocolVersion": "0.1",
+        "listingMandateId": "listing_mandate_weather_2026_08",
+        "version": 1,
+        "sellerIdentityRef": "seller_acme",
+        "serviceSkuId": "sku_weather",
+        "skuVersionDigest": "sha256:430f5d2026a37e3ec4ed3ac4db18142402d05969fdffc83a52add9a9579c1d30",
+        "authorizedChallengeIssuers": [
+          {
+            "issuer": "openant_gateway",
+            "keyId": "challenge_key_2026_08"
+          }
+        ],
+        "validFrom": "2025-01-02T00:00:00Z",
+        "validUntil": "2099-01-01T00:00:00Z",
+        "signature": {
+          "scheme": "DETACHED_JWS_EDDSA",
+          "issuer": "seller_acme",
+          "keyId": "listing_key_2026_08",
+          "signedObjectDigest": "sha256:25787e4299e4dbef8ecced473b6b14b3343c7224516053d94886347512afd301",
+          "signature": "eyJhbGciOiJFZERTQSIsImF1ZCI6Inplcm9feF9rZXk6Y29tbWVyY2VfYXV0aG9yaXphdGlvbiIsImlzcyI6InNlbGxlcl9hY21lIiwia2lkIjoibGlzdGluZ19rZXlfMjAyNl8wOCIsInR5cCI6Im9wZW5hbnQtY29tbWVyY2UrandzIn0..ZKlRPtjC0upqd1uFcpcSRu81cxMObNja9352x_XfPyb3K5Ry1L9tGoPtrUEjlBhj0C_agYfEErB8LSFk6yZlBA"
+        }
+      }
+    ],
+    "catalogRoots": {
+      "serviceDefinitionVersionDigest": "sha256:1dcfaa44e9a460cfcd2d605fd52493e76ae49bd9906e9a02ce19691223d2af4f",
+      "offerVersionDigest": "sha256:fafc26e77ee2096e66b6dd6db16d8ea7a207b895d3ed4d383571d71de276480f",
+      "endpointDescriptorVersionDigest": "sha256:db4a404c753783222c1607ca20be67e6419d615c59c04ed551bf3368eea165e7",
+      "serviceSkuVersionDigest": "sha256:430f5d2026a37e3ec4ed3ac4db18142402d05969fdffc83a52add9a9579c1d30"
+    },
+    "signature": {
+      "scheme": "DETACHED_JWS_EDDSA",
+      "issuer": "openant_trust",
+      "keyId": "trust_snapshot_root_2026_08",
+      "signedObjectDigest": "sha256:0074ec6d799ec83846f644c4eefd337ee6639c4b7f021ec91b235792d7b231fd",
+      "signature": "eyJhbGciOiJFZERTQSIsImF1ZCI6Im9wZW5hbnQ6dHJ1c3Rfc25hcHNob3QiLCJpc3MiOiJvcGVuYW50X3RydXN0Iiwia2lkIjoidHJ1c3Rfc25hcHNob3Rfcm9vdF8yMDI2XzA4IiwidHlwIjoib3BlbmFudC1jb21tZXJjZStqd3MifQ..GasbdoYgSHNMD8SesCgMnt-V96c5qoDdyMUU_1gzQAKdpdtK6knryro7rx1FBwM7PYFNWLVNCsi1belTKii9BA"
+    }
+  },
+  "canonicalSnapshot": "{\"cache\":{\"maxAgeSeconds\":300,\"mustRevalidate\":true},\"capabilities\":{\"containsTenantCredentials\":false,\"mintsCommerceAuthority\":false},\"catalogRoots\":{\"endpointDescriptorVersionDigest\":\"sha256:db4a404c753783222c1607ca20be67e6419d615c59c04ed551bf3368eea165e7\",\"offerVersionDigest\":\"sha256:fafc26e77ee2096e66b6dd6db16d8ea7a207b895d3ed4d383571d71de276480f\",\"serviceDefinitionVersionDigest\":\"sha256:1dcfaa44e9a460cfcd2d605fd52493e76ae49bd9906e9a02ce19691223d2af4f\",\"serviceSkuVersionDigest\":\"sha256:430f5d2026a37e3ec4ed3ac4db18142402d05969fdffc83a52add9a9579c1d30\"},\"expiresAt\":\"2026-09-13T00:00:00Z\",\"generatedAt\":\"2026-08-13T23:59:00Z\",\"issuer\":\"openant_trust\",\"listingMandates\":[{\"authorizedChallengeIssuers\":[{\"issuer\":\"openant_gateway\",\"keyId\":\"challenge_key_2026_08\"}],\"listingMandateId\":\"listing_mandate_weather_2026_08\",\"objectType\":\"ListingMandate\",\"protocolVersion\":\"0.1\",\"sellerIdentityRef\":\"seller_acme\",\"serviceSkuId\":\"sku_weather\",\"signature\":{\"issuer\":\"seller_acme\",\"keyId\":\"listing_key_2026_08\",\"scheme\":\"DETACHED_JWS_EDDSA\",\"signature\":\"eyJhbGciOiJFZERTQSIsImF1ZCI6Inplcm9feF9rZXk6Y29tbWVyY2VfYXV0aG9yaXphdGlvbiIsImlzcyI6InNlbGxlcl9hY21lIiwia2lkIjoibGlzdGluZ19rZXlfMjAyNl8wOCIsInR5cCI6Im9wZW5hbnQtY29tbWVyY2UrandzIn0..ZKlRPtjC0upqd1uFcpcSRu81cxMObNja9352x_XfPyb3K5Ry1L9tGoPtrUEjlBhj0C_agYfEErB8LSFk6yZlBA\",\"signedObjectDigest\":\"sha256:25787e4299e4dbef8ecced473b6b14b3343c7224516053d94886347512afd301\"},\"skuVersionDigest\":\"sha256:430f5d2026a37e3ec4ed3ac4db18142402d05969fdffc83a52add9a9579c1d30\",\"validFrom\":\"2025-01-02T00:00:00Z\",\"validUntil\":\"2099-01-01T00:00:00Z\",\"version\":1}],\"objectType\":\"OpenAntTrustSnapshot\",\"previousSnapshotDigest\":\"sha256:2b3a0ec838fe44c07633c22d7d683e01f7a22055659168ae36cf8853619df83c\",\"protocolVersion\":\"0.1\",\"signature\":{\"issuer\":\"openant_trust\",\"keyId\":\"trust_snapshot_root_2026_08\",\"scheme\":\"DETACHED_JWS_EDDSA\",\"signature\":\"eyJhbGciOiJFZERTQSIsImF1ZCI6Im9wZW5hbnQ6dHJ1c3Rfc25hcHNob3QiLCJpc3MiOiJvcGVuYW50X3RydXN0Iiwia2lkIjoidHJ1c3Rfc25hcHNob3Rfcm9vdF8yMDI2XzA4IiwidHlwIjoib3BlbmFudC1jb21tZXJjZStqd3MifQ..GasbdoYgSHNMD8SesCgMnt-V96c5qoDdyMUU_1gzQAKdpdtK6knryro7rx1FBwM7PYFNWLVNCsi1belTKii9BA\",\"signedObjectDigest\":\"sha256:0074ec6d799ec83846f644c4eefd337ee6639c4b7f021ec91b235792d7b231fd\"},\"snapshotVersion\":2,\"sourceArtifact\":{\"artifactSha256\":\"cc45f2e5d3566c3756c522d20f9eb978d086256980af59957d780eda7699996e\",\"commit\":\"f1cd81d977717986eaad741d22fc84ad1b380f70\"},\"verificationKeys\":[{\"algorithm\":\"EdDSA\",\"issuer\":\"openant_gateway\",\"jwk\":{\"crv\":\"Ed25519\",\"key_ops\":[\"verify\"],\"kty\":\"OKP\",\"use\":\"sig\",\"x\":\"SMG5tu10xzmvNYcuiv48yMz6G9JajgO3Sw_v-69v5xI\"},\"kid\":\"challenge_key_2026_07\",\"notAfterUnixMs\":1787184000000,\"notBeforeUnixMs\":1782864000000,\"revokedAtUnixMs\":null,\"role\":\"ISSUER\"},{\"algorithm\":\"EdDSA\",\"issuer\":\"seller_acme\",\"jwk\":{\"crv\":\"Ed25519\",\"key_ops\":[\"verify\"],\"kty\":\"OKP\",\"use\":\"sig\",\"x\":\"b3LjUhM8JzPfUn1RrAszJP9HGDw_phr8UC9q5cmMjWE\"},\"kid\":\"listing_key_2026_08\",\"notAfterUnixMs\":null,\"notBeforeUnixMs\":1735689600000,\"revokedAtUnixMs\":null,\"role\":\"ISSUER\"},{\"algorithm\":\"EdDSA\",\"issuer\":\"openant_gateway\",\"jwk\":{\"crv\":\"Ed25519\",\"key_ops\":[\"verify\"],\"kty\":\"OKP\",\"use\":\"sig\",\"x\":\"KLTAZpV7IjSZQIwd08e6WwTqNjV1hhZTh9aCk1XDSRI\"},\"kid\":\"challenge_key_2026_08\",\"notAfterUnixMs\":null,\"notBeforeUnixMs\":1735689600000,\"revokedAtUnixMs\":null,\"role\":\"ISSUER\"}]}",
+  "etag": "\"sha256:c2bc504de781106fcbb9edc1f3e13a9d74bce532eb20adb698fbcbd1b754fe04\""
+}

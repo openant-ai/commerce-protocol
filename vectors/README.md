@@ -25,6 +25,24 @@ rejection is itself an idempotent committed result.
 The fixtures contain metadata and digests only. They never contain request or
 response bodies, artifact bytes, credentials, or real-money capabilities.
 
+## OpenAnt trust snapshot v1
+
+`openant-trust-snapshot-v1.json` publishes snapshot version 2 as canonical,
+byte-identical public metadata. It pins the signed Listing/Challenge/catalog corpus
+at commit `f1cd81d977717986eaad741d22fc84ad1b380f70` and artifact SHA-256
+`cc45f2e5d3566c3756c522d20f9eb978d086256980af59957d780eda7699996e`.
+Its own immutable artifact SHA-256 is
+`93215bccc6dcd11e9bb00e6f9334cfbde542faae05bfebd020b69c91b6c654f4`.
+
+The corpus contains a verify-only root JWK, an independently signed snapshot,
+previous/current Challenge-key overlap, the seller Listing verification key, a
+signed ListingMandate, and immutable Definition/Offer/Endpoint/SKU roots. It has no
+tenant credential and grants no Mandate/AppProof/Commerce authority. Node exercises
+the HTTP cache and fault matrix; Rust independently reproduces JCS, the framed
+digest, Ed25519 signature, ETag, and privacy assertions.
+`openant-trust-snapshot-v1-report.json` is the downloadable deterministic
+positive/negative/cache/privacy matrix for that exact coordinate.
+
 ## Signed OpenAnt x402 Challenge
 
 `openant-x402-challenge-v1.json` is the additive draft.4 challenge/catalog resolution
