@@ -160,6 +160,54 @@ test("signed nested metadata uses closed schemas and canonical verify-only JWKs"
   rejectSigned((snapshot) => { snapshot.verificationKeys[0].jwk.x = "AA"; }, "KEY_INVALID");
 });
 
+test("rejects calendar-invalid instants instead of accepting Date normalization", () => {
+  assert.throws(() => validateTrustSnapshot({
+    body: corpus.canonicalSnapshot,
+    trustAnchor: corpus.trustAnchor,
+    observedAt: "2026-02-30T00:00:00Z",
+  }), (error) => error.code === "CLOCK_INVALID", "observedAt");
+  rejectSigned((snapshot) => {
+    snapshot.generatedAt = "2026-02-30T00:00:00Z";
+  }, "SCHEMA_INVALID");
+  rejectSigned((snapshot) => {
+    snapshot.expiresAt = "2026-09-31T00:00:00Z";
+  }, "SCHEMA_INVALID");
+});
+
+test("root signatures have one exact 64-byte canonical base64url representation", () => {
+  const original = corpus.snapshot.signature.signature.split(".")[2];
+  const decoded = Buffer.from(original, "base64url");
+  assert.equal(decoded.length, 64);
+
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+  const finalIndex = alphabet.indexOf(original.at(-1));
+  const unusedBitAlternative = `${original.slice(0, -1)}${alphabet[finalIndex + 1]}`;
+  assert.deepEqual(Buffer.from(unusedBitAlternative, "base64url"), decoded);
+
+  const alternatives = [
+    `${original}==`,
+    unusedBitAlternative,
+    Buffer.concat([decoded, Buffer.from([0])]).toString("base64url"),
+  ];
+  for (const encodedSignature of alternatives) {
+    const snapshot = structuredClone(corpus.snapshot);
+    const [header] = snapshot.signature.signature.split(".");
+    snapshot.signature.signature = `${header}..${encodedSignature}`;
+    const body = canonicalJson(snapshot);
+    assert.notEqual(body, corpus.canonicalSnapshot);
+    assert.notEqual(createHash("sha256").update(body).digest("hex"), corpus.etag.slice(8, -1));
+    assert.throws(() => validateTrustSnapshot({
+      body,
+      trustAnchor: corpus.trustAnchor,
+      observedAt: "2026-08-14T00:00:00Z",
+      previous: {
+        version: corpus.snapshot.snapshotVersion,
+        digest: corpus.snapshot.signature.signedObjectDigest,
+      },
+    }), (error) => error.code === "SIGNATURE_INVALID", encodedSignature);
+  }
+});
+
 test("every signer referenced by a Listing is active at observedAt", () => {
   rejectSigned((snapshot) => {
     snapshot.verificationKeys.find((key) => key.kid === "listing_key_2026_08").revokedAtUnixMs =

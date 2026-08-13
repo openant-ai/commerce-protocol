@@ -82,7 +82,10 @@ function parseInstant(value, code) {
     fail(code, "snapshot instant must be canonical UTC seconds");
   }
   const instant = Date.parse(value);
-  if (!Number.isFinite(instant)) fail(code, "snapshot instant is invalid");
+  if (
+    !Number.isFinite(instant)
+    || new Date(instant).toISOString().replace(".000Z", "Z") !== value
+  ) fail(code, "snapshot instant is invalid");
   return instant;
 }
 
@@ -165,6 +168,15 @@ function verifyRootSignature(snapshot, trustAnchor, observedAtMs) {
   if (!encodedHeader || detachedPayload !== "" || !encodedSignature || extra !== undefined) {
     fail("SIGNATURE_INVALID", "snapshot detached JWS is malformed");
   }
+  let signatureBytes;
+  try {
+    signatureBytes = Buffer.from(encodedSignature, "base64url");
+  } catch {
+    fail("SIGNATURE_INVALID", "snapshot signature is not canonical base64url");
+  }
+  if (signatureBytes.length !== 64 || signatureBytes.toString("base64url") !== encodedSignature) {
+    fail("SIGNATURE_INVALID", "snapshot signature must be canonical base64url for exactly 64 bytes");
+  }
   let header;
   try {
     header = JSON.parse(Buffer.from(encodedHeader, "base64url").toString("utf8"));
@@ -194,7 +206,7 @@ function verifyRootSignature(snapshot, trustAnchor, observedAtMs) {
       null,
       Buffer.from(`${encodedHeader}.${payload}`, "ascii"),
       createPublicKey({ key: trustAnchor.jwk, format: "jwk" }),
-      Buffer.from(encodedSignature, "base64url"),
+      signatureBytes,
     );
   } catch {
     valid = false;
