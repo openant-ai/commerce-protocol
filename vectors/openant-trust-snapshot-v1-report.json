@@ -1,0 +1,50 @@
+{
+  "id": "OPENANT.TRUST.SNAPSHOT.REPORT.001",
+  "result": "PASS",
+  "protocolVersion": "0.1",
+  "sourceCommit": "f1cd81d977717986eaad741d22fc84ad1b380f70",
+  "sourceArtifactSha256": "cc45f2e5d3566c3756c522d20f9eb978d086256980af59957d780eda7699996e",
+  "snapshotArtifactSha256": "93215bccc6dcd11e9bb00e6f9334cfbde542faae05bfebd020b69c91b6c654f4",
+  "snapshotDigest": "sha256:0074ec6d799ec83846f644c4eefd337ee6639c4b7f021ec91b235792d7b231fd",
+  "snapshotVersion": 2,
+  "issuer": "openant_trust",
+  "kid": "trust_snapshot_root_2026_08",
+  "etag": "\"sha256:c2bc504de781106fcbb9edc1f3e13a9d74bce532eb20adb698fbcbd1b754fe04\"",
+  "accepted": [
+    "CURRENT_KEY",
+    "OVERLAP_ROTATION"
+  ],
+  "rejected": [
+    "EMPTY_SNAPSHOT",
+    "EXPIRED",
+    "INACTIVE_REFERENCED_CHALLENGE_KEY",
+    "INACTIVE_REFERENCED_LISTING_KEY",
+    "MALFORMED_TRUST_ANCHOR",
+    "NESTED_EXTRA_FIELD",
+    "NON_CANONICAL",
+    "PRIVATE_OR_NON_CANONICAL_JWK",
+    "REVOKED_ROOT",
+    "ROLLBACK",
+    "SIGNATURE_TAMPER",
+    "STALE",
+    "UNKNOWN_KID",
+    "VERSION_GAP",
+    "VERSION_FORK"
+  ],
+  "http": [
+    "GET_200",
+    "HEAD_200",
+    "IF_NONE_MATCH_304",
+    "IF_NONE_MATCH_CASE_INSENSITIVE",
+    "METHOD_405",
+    "QUERY_404"
+  ],
+  "privacy": [
+    "NO_BEARER",
+    "NO_BUSINESS_BODY",
+    "NO_PRIVATE_JWK",
+    "NO_TENANT_CREDENTIAL",
+    "NO_MANDATE_ASSURANCE"
+  ],
+  "authority": "PUBLIC_TRUST_METADATA_ONLY"
+}

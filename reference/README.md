@@ -50,6 +50,9 @@ Public seams:
 - `adapter-cli.mjs` for one-shot process isolation. It reads one
   `{command:"runVector", scenario}` object on stdin and emits one normalized,
   metadata-only result.
+- `issuer/trust-snapshot.mjs` for the immutable signed trust-metadata oracle. Its
+  fixed path is a reference contract, not a production deployment URL; production
+  monotonic publisher storage remains an integration gate.
 
 Run the scoped tests without changing workspace package metadata:
 

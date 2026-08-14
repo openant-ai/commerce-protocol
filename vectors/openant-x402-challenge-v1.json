@@ -1,0 +1,284 @@
+{
+  "id": "OPENANT.X402.CHALLENGE.SIGNED.001",
+  "protocolVersion": "0.1.0-draft.4",
+  "wireVersion": "0.1",
+  "audience": "zero_x_key:commerce_authorization",
+  "provenance": "externally signed release conformance artifact",
+  "keys": [
+    {
+      "issuer": "seller_acme",
+      "kid": "listing_key_2026_08",
+      "role": "ISSUER",
+      "algorithm": "EdDSA",
+      "notBeforeUnixMs": 1735689600000,
+      "notAfterUnixMs": null,
+      "revokedAtUnixMs": null,
+      "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "use": "sig",
+        "key_ops": [
+          "verify"
+        ],
+        "x": "b3LjUhM8JzPfUn1RrAszJP9HGDw_phr8UC9q5cmMjWE"
+      }
+    },
+    {
+      "issuer": "openant_gateway",
+      "kid": "challenge_key_2026_08",
+      "role": "ISSUER",
+      "algorithm": "EdDSA",
+      "notBeforeUnixMs": 1735689600000,
+      "notAfterUnixMs": null,
+      "revokedAtUnixMs": null,
+      "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "use": "sig",
+        "key_ops": [
+          "verify"
+        ],
+        "x": "KLTAZpV7IjSZQIwd08e6WwTqNjV1hhZTh9aCk1XDSRI"
+      }
+    }
+  ],
+  "resolvedCatalog": {
+    "serviceDefinitionVersion": {
+      "objectType": "ServiceDefinitionVersion",
+      "protocolVersion": "0.1",
+      "serviceDefinitionId": "service_weather",
+      "version": 1,
+      "operationId": "operation_weather_current",
+      "category": "READ_ONLY_DATA",
+      "inputMediaType": "application/json",
+      "outputMediaType": "application/json",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ],
+        "properties": {
+          "city": {
+            "type": "string",
+            "maxLength": 128
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "temperatureCelsius"
+        ],
+        "properties": {
+          "temperatureCelsius": {
+            "type": "number"
+          }
+        }
+      },
+      "chargeableSuccess": {
+        "meter": "SUCCESSFUL_UNARY_CALL",
+        "httpStatuses": [
+          200
+        ],
+        "schemaMustMatch": true,
+        "emptyResultAllowed": false
+      },
+      "limits": {
+        "requestBytes": 65536,
+        "responseBytes": 1048576,
+        "artifactBytes": 104857600,
+        "sellerExecutionSeconds": 30,
+        "invocationSeconds": 90
+      },
+      "versionDigest": "sha256:1dcfaa44e9a460cfcd2d605fd52493e76ae49bd9906e9a02ce19691223d2af4f"
+    },
+    "offerVersion": {
+      "objectType": "OfferVersion",
+      "protocolVersion": "0.1",
+      "offerId": "offer_weather",
+      "version": 1,
+      "pricingModel": "FIXED_PER_SUCCESSFUL_UNARY_CALL",
+      "amountAtomic": "100000",
+      "asset": {
+        "network": "eip155:8453",
+        "namespace": "erc20",
+        "reference": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        "symbol": "USDC",
+        "decimals": 6
+      },
+      "payoutAddress": "0x1111111111111111111111111111111111111111",
+      "refundPolicy": "SELLER_AUTHORIZED_NEW_TRANSACTION",
+      "deliveryTerms": {
+        "unacknowledgedRecoverySeconds": 86400,
+        "acknowledgedDeletionGraceSeconds": 900
+      },
+      "minimumAssurance": {
+        "authorization": "MANDATE_PROTECTED",
+        "settlement": "FINALITY_VERIFIED",
+        "delivery": "HOSTED_RECOVERABLE",
+        "contentCustody": "HOSTED_ENCRYPTED_BUFFER",
+        "identity": "VERIFIED_SELLER"
+      },
+      "versionDigest": "sha256:fafc26e77ee2096e66b6dd6db16d8ea7a207b895d3ed4d383571d71de276480f"
+    },
+    "endpointDescriptorVersion": {
+      "objectType": "EndpointDescriptorVersion",
+      "protocolVersion": "0.1",
+      "endpointDescriptorId": "endpoint_weather",
+      "version": 1,
+      "mode": "HOSTED",
+      "invokeUri": "https://commerce.openant.ai/v1/invoke/weather",
+      "challengeIssuer": {
+        "issuer": "openant_gateway",
+        "keyId": "challenge_key_2026_08"
+      },
+      "executionIssuerKeys": [
+        {
+          "issuer": "seller_acme",
+          "keyId": "execution_key_2026_08"
+        }
+      ],
+      "stagingIssuerKeys": [
+        {
+          "issuer": "openant_gateway",
+          "keyId": "staging_key_2026_08"
+        }
+      ],
+      "deliveryIssuerKeys": [
+        {
+          "issuer": "openant_gateway",
+          "keyId": "delivery_key_2026_08"
+        }
+      ],
+      "commerceIssuerKeys": [
+        {
+          "issuer": "openant_core",
+          "keyId": "commerce_key_2026_08"
+        }
+      ],
+      "versionDigest": "sha256:db4a404c753783222c1607ca20be67e6419d615c59c04ed551bf3368eea165e7"
+    },
+    "serviceSkuVersion": {
+      "objectType": "ServiceSKUVersion",
+      "protocolVersion": "0.1",
+      "serviceSkuId": "sku_weather",
+      "version": 1,
+      "operationId": "operation_weather_current",
+      "sellerIdentityRef": "seller_acme",
+      "serviceDefinitionVersionDigest": "sha256:1dcfaa44e9a460cfcd2d605fd52493e76ae49bd9906e9a02ce19691223d2af4f",
+      "offerVersionDigest": "sha256:fafc26e77ee2096e66b6dd6db16d8ea7a207b895d3ed4d383571d71de276480f",
+      "endpointDescriptorVersionDigest": "sha256:db4a404c753783222c1607ca20be67e6419d615c59c04ed551bf3368eea165e7",
+      "skuVersionDigest": "sha256:430f5d2026a37e3ec4ed3ac4db18142402d05969fdffc83a52add9a9579c1d30"
+    }
+  },
+  "listingMandate": {
+    "objectType": "ListingMandate",
+    "protocolVersion": "0.1",
+    "listingMandateId": "listing_mandate_weather_2026_08",
+    "version": 1,
+    "sellerIdentityRef": "seller_acme",
+    "serviceSkuId": "sku_weather",
+    "skuVersionDigest": "sha256:430f5d2026a37e3ec4ed3ac4db18142402d05969fdffc83a52add9a9579c1d30",
+    "authorizedChallengeIssuers": [
+      {
+        "issuer": "openant_gateway",
+        "keyId": "challenge_key_2026_08"
+      }
+    ],
+    "validFrom": "2025-01-02T00:00:00Z",
+    "validUntil": "2099-01-01T00:00:00Z",
+    "signature": {
+      "scheme": "DETACHED_JWS_EDDSA",
+      "issuer": "seller_acme",
+      "keyId": "listing_key_2026_08",
+      "signedObjectDigest": "sha256:25787e4299e4dbef8ecced473b6b14b3343c7224516053d94886347512afd301",
+      "signature": "eyJhbGciOiJFZERTQSIsImF1ZCI6Inplcm9feF9rZXk6Y29tbWVyY2VfYXV0aG9yaXphdGlvbiIsImlzcyI6InNlbGxlcl9hY21lIiwia2lkIjoibGlzdGluZ19rZXlfMjAyNl8wOCIsInR5cCI6Im9wZW5hbnQtY29tbWVyY2UrandzIn0..ZKlRPtjC0upqd1uFcpcSRu81cxMObNja9352x_XfPyb3K5Ry1L9tGoPtrUEjlBhj0C_agYfEErB8LSFk6yZlBA"
+    }
+  },
+  "paymentRequiredOutcome": {
+    "objectType": "PaymentRequiredOutcome",
+    "protocolVersion": "0.1",
+    "outcome": "PAYMENT_REQUIRED",
+    "paymentRequired": {
+      "x402Version": 2,
+      "resource": {
+        "url": "https://commerce.openant.ai/v1/invoke/weather",
+        "description": "Current weather lookup",
+        "mimeType": "application/json"
+      },
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "eip155:8453",
+          "amount": "100000",
+          "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          "payTo": "0x1111111111111111111111111111111111111111",
+          "maxTimeoutSeconds": 90,
+          "extra": {}
+        }
+      ],
+      "extensions": {
+        "openant": {
+          "objectType": "OpenAntX402Extension",
+          "protocolVersion": "0.1",
+          "invocationId": "invocation_weather_2026_08_13",
+          "operationId": "operation_weather_current",
+          "serviceSkuId": "sku_weather",
+          "skuVersionDigest": "sha256:430f5d2026a37e3ec4ed3ac4db18142402d05969fdffc83a52add9a9579c1d30",
+          "listingMandateDigest": "sha256:25787e4299e4dbef8ecced473b6b14b3343c7224516053d94886347512afd301",
+          "requestDigest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+          "paymentTermsDigest": "sha256:ad14e71ba0b9fee14157d94371dbbfb8f91a6b8b0b11ae596ca57613d7a095d0",
+          "sellerIdentityRef": "seller_acme",
+          "payoutAddress": "0x1111111111111111111111111111111111111111",
+          "amountAtomic": "100000",
+          "asset": {
+            "network": "eip155:8453",
+            "namespace": "erc20",
+            "reference": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+            "symbol": "USDC",
+            "decimals": 6
+          },
+          "mode": "HOSTED",
+          "assurance": {
+            "authorization": "MANDATE_PROTECTED",
+            "settlement": "FINALITY_VERIFIED",
+            "delivery": "HOSTED_RECOVERABLE",
+            "contentCustody": "HOSTED_ENCRYPTED_BUFFER",
+            "identity": "VERIFIED_SELLER"
+          },
+          "nonce": "challenge_nonce_2026_08_13_0001",
+          "issuedAt": "2025-01-03T00:00:00Z",
+          "expiresAt": "2098-12-31T00:00:00Z",
+          "signature": {
+            "scheme": "DETACHED_JWS_EDDSA",
+            "issuer": "openant_gateway",
+            "keyId": "challenge_key_2026_08",
+            "signedObjectDigest": "sha256:8ffc7ec5bbaf923e1e0868d3c78e45c4969250d3629f17cb3c658b0be6bf813e",
+            "signature": "eyJhbGciOiJFZERTQSIsImF1ZCI6Inplcm9feF9rZXk6Y29tbWVyY2VfYXV0aG9yaXphdGlvbiIsImlzcyI6Im9wZW5hbnRfZ2F0ZXdheSIsImtpZCI6ImNoYWxsZW5nZV9rZXlfMjAyNl8wOCIsInR5cCI6Im9wZW5hbnQtY29tbWVyY2UrandzIn0..B5-PPB-z6rhBFT7bYiVx4NMCzFNVl9Iul3eLBJGokbBeBCACGxS4RtWx3jZfYvBp5GkZN13QPmjQPBQjBiPaCw"
+          }
+        }
+      }
+    }
+  },
+  "standardX402WithoutExtension": {
+    "x402Version": 2,
+    "resource": {
+      "url": "https://commerce.openant.ai/v1/invoke/weather",
+      "description": "Current weather lookup",
+      "mimeType": "application/json"
+    },
+    "accepts": [
+      {
+        "scheme": "exact",
+        "network": "eip155:8453",
+        "amount": "100000",
+        "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        "payTo": "0x1111111111111111111111111111111111111111",
+        "maxTimeoutSeconds": 90,
+        "extra": {}
+      }
+    ]
+  }
+}

@@ -44,7 +44,7 @@ pub enum VerificationError {
     StatementFromFuture,
     #[error("statement preimage does not reproduce signedObjectDigest")]
     StatementDigestMismatch,
-    #[error("digest-bound statement issuedAt is missing or invalid")]
+    #[error("selected digest-bound statement lifecycle time is missing or invalid")]
     StatementIssuedAtInvalid,
     #[error("signature encoding is invalid")]
     SignatureEncodingInvalid,
@@ -207,6 +207,26 @@ pub struct DigestBoundStatement<'a> {
     pub profile: &'a str,
     pub preimage: &'a Value,
     pub wire_version: &'a str,
+    pub lifecycle_field: StatementLifecycleField,
+}
+
+/// The exact signed statement field used only to reject future-dated statements.
+///
+/// This is a closed caller-selected policy, not a wire value. Key activation, expiry,
+/// and revocation continue to be evaluated at the verifier-owned observation time.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum StatementLifecycleField {
+    IssuedAt,
+    ValidFrom,
+}
+
+impl StatementLifecycleField {
+    const fn json_name(self) -> &'static str {
+        match self {
+            Self::IssuedAt => "issuedAt",
+            Self::ValidFrom => "validFrom",
+        }
+    }
 }
 
 /// Live detached-JWS verification context.
@@ -215,14 +235,34 @@ pub struct DigestBoundStatement<'a> {
 /// a caller. `verify_detached_jws` reads the verifier-owned system clock for every call.
 ///
 /// ```compile_fail
-/// # use openant_commerce_verifier::{DigestBoundStatement, KeyRole, VerificationContext};
+/// # use openant_commerce_verifier::{DigestBoundStatement, KeyRole, StatementLifecycleField, VerificationContext};
 /// # use serde_json::Value;
 /// # fn cannot_backfill<'a>(preimage: &'a Value) {
 /// let _ = VerificationContext {
 ///     audience: "openant-commerce-verifier",
 ///     required_role: KeyRole::Issuer,
-///     statement: DigestBoundStatement { profile: "TEST", preimage, wire_version: "0.1" },
+///     statement: DigestBoundStatement {
+///         profile: "TEST",
+///         preimage,
+///         wire_version: "0.1",
+///         lifecycle_field: StatementLifecycleField::IssuedAt,
+///     },
 ///     observed_at_unix_ms: 0,
+/// };
+/// # }
+/// ```
+///
+/// Callers also cannot supply an arbitrary wire field name:
+///
+/// ```compile_fail
+/// # use openant_commerce_verifier::{DigestBoundStatement, StatementLifecycleField};
+/// # use serde_json::Value;
+/// # fn cannot_select_arbitrary_field<'a>(preimage: &'a Value) {
+/// let _ = DigestBoundStatement {
+///     profile: "LISTING_MANDATE",
+///     preimage,
+///     wire_version: "0.1",
+///     lifecycle_field: "attackerControlled",
 /// };
 /// # }
 /// ```
@@ -495,7 +535,10 @@ impl HistoricalKeyRegistry {
         if computed_statement_digest != envelope.signed_object_digest {
             return Err(VerificationError::StatementDigestMismatch);
         }
-        let statement_issued_at_unix_ms = parse_statement_issued_at(context.statement.preimage)?;
+        let statement_issued_at_unix_ms = parse_statement_lifecycle_time(
+            context.statement.preimage,
+            context.statement.lifecycle_field,
+        )?;
 
         let mut segments = envelope.signature.split('.');
         let protected_segment = segments.next().ok_or(VerificationError::JwsMalformed)?;
@@ -627,13 +670,16 @@ impl HistoricalKeyRegistry {
     }
 }
 
-fn parse_statement_issued_at(statement: &Value) -> Result<i64, VerificationError> {
-    let issued_at = statement
+fn parse_statement_lifecycle_time(
+    statement: &Value,
+    field: StatementLifecycleField,
+) -> Result<i64, VerificationError> {
+    let statement_time = statement
         .as_object()
-        .and_then(|object| object.get("issuedAt"))
+        .and_then(|object| object.get(field.json_name()))
         .and_then(Value::as_str)
         .ok_or(VerificationError::StatementIssuedAtInvalid)?;
-    parse_rfc3339_utc_whole_seconds_value(issued_at)
+    parse_rfc3339_utc_whole_seconds_value(statement_time)
         .ok_or(VerificationError::StatementIssuedAtInvalid)
 }
 
